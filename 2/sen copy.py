@@ -38,11 +38,13 @@ gpio.setup(polinv, gpio.OUT)
 gpio.setup(emergency, gpio.OUT)
 gpio.output(emergency, gpio.LOW)
 
+
 # === 温度取得関数 ===
 def MeasTemp():
     data = spi.xfer2(dummyData)
     value = ((data[0] & 0x7F) << 5) | ((data[1] & 0xF8) >> 3)
     return value * 0.25
+
 
 # === 非常停止関数 ===
 def emergency_stop():
@@ -51,6 +53,7 @@ def emergency_stop():
     gpio.output(emergency, gpio.LOW)
     print("[警告] 非常停止しました。")
 
+
 # === PI制御で温度調整 ===
 def SetTemp(goal, vin_init, mode):
     global status
@@ -58,7 +61,7 @@ def SetTemp(goal, vin_init, mode):
     e, e1, e2 = 0.0, 0.0, 0.0
     Kp, Ki, Kd = 0.1, 0.05, 0.9
     vin = vin_init
-    
+
     while True:
         temp = MeasTemp()
         labelCTemp.config(text=f"{temp:.2f}")
@@ -90,6 +93,7 @@ def SetTemp(goal, vin_init, mode):
         labelVin.config(text=f"{vin:.2f} V")
         time.sleep(0.2)
 
+
 # === 測定器初期化 ===
 def EqSet():
     try:
@@ -115,6 +119,7 @@ def EqSet():
 
     except Exception as e:
         print(f"[接続失敗] {e}")
+
 
 # === 試験開始 ===
 def TestStart():
@@ -142,6 +147,7 @@ def TestStart():
     status = "終了"
     buttonStart.config(text="試験開始")
 
+
 # === 試験停止 ===
 def TestStop():
     global status
@@ -154,6 +160,7 @@ def TestStop():
     labelStatus.config(text="停止中")
     buttonStart.config(text="試験開始")
 
+
 # === GUI関連 ===
 def update():
     try:
@@ -163,6 +170,7 @@ def update():
     except:
         pass
     app.after(1000, update)
+
 
 app = tk.Tk()
 app.geometry("320x250")

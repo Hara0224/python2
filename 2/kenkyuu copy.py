@@ -7,13 +7,14 @@ TEXIOPort = 2268
 
 TEXIO = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+
 def connect_texio():
     """TEXIO電源装置に接続します。"""
     try:
         print(f"TEXIO ({TEXIOHost}:{TEXIOPort}) に接続を試みます...")
         TEXIO.connect((TEXIOHost, TEXIOPort))
 
-        TEXIO.send(b'idn?\n')
+        TEXIO.send(b"idn?\n")
         response_texio = TEXIO.recv(4096)
         print(f"TEXIO接続成功: {response_texio.decode().strip()}")
 
@@ -29,17 +30,19 @@ def set_texio_voltage(voltage):
         TEXIO.send(command)
         print(f"{voltage:.1f} V に設定しました。")
 
-        TEXIO.send(b'OUTP ON\n')
+        TEXIO.send(b"OUTP ON\n")
         print("TEXIOの出力をONにしました。")
     except Exception as e:
         print(f"TEXIOの電圧設定に失敗しました: {e}")
 
+
 def turn_off_texio_output():
     try:
-        TEXIO.send(b'OUTP OFF\n')
+        TEXIO.send(b"OUTP OFF\n")
         print("TEXIOの出力を停止しました。")
     except Exception as e:
         print(f"TEXIO停止エラー: {e}")
+
 
 def close_texio_connection():
     try:
@@ -47,6 +50,7 @@ def close_texio_connection():
         print("TEXIOとの接続を閉じました。")
     except Exception as e:
         print(f"ソケットクローズエラー: {e}")
+
 
 if __name__ == "__main__":
     if not connect_texio():
