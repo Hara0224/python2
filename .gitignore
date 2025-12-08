@@ -3,3 +3,5 @@
 *.csv
 *.h5
 *.ckpt
+*.wav
+*.uirecsession
