@@ -6,4 +6,9 @@ __pycache__/
 *.pth
 *.csv
 *.mp3
+*.joblib
+*.png
+*.log
+*.jpeg
+*.jpg
 
