@@ -4,25 +4,18 @@ import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.metrics import accuracy_score, confusion_matrix
 
+
 # === EMG_CNN モデル定義 ===
 class EMG_CNN(nn.Module):
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Conv1d(8, 16, kernel_size=3),
-            nn.ReLU(),
-            nn.MaxPool1d(2),
-            nn.Conv1d(16, 32, kernel_size=3),
-            nn.ReLU(),
-            nn.MaxPool1d(2),
-            nn.Flatten(),
-            nn.Linear(32 * 11, 64),
-            nn.ReLU(),
-            nn.Linear(64, 2)
+            nn.Conv1d(8, 16, kernel_size=3), nn.ReLU(), nn.MaxPool1d(2), nn.Conv1d(16, 32, kernel_size=3), nn.ReLU(), nn.MaxPool1d(2), nn.Flatten(), nn.Linear(32 * 11, 64), nn.ReLU(), nn.Linear(64, 2)
         )
 
     def forward(self, x):
         return self.net(x)
+
 
 # === データ読み込み ===
 data = np.load("emg_dataset.npz")

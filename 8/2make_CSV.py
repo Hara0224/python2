@@ -40,9 +40,7 @@ total = len(labels) * repeats_per_label
 
 for i in range(repeats_per_label):
     for label in labels:
-        print(
-            f"\n🔴 [{counter}/{total}] {label} を記録します...（{record_duration}秒）"
-        )
+        print(f"\n🔴 [{counter}/{total}] {label} を記録します...（{record_duration}秒）")
         m.vibrate(2)
         raw_data = []  # 直前のデータをクリア
 

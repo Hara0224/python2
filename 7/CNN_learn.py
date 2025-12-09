@@ -22,33 +22,21 @@ import pickle
 from PIL import Image
 from keras.layers.wrappers import Bidirectional
 from keras.layers.recurrent import LSTM
-from keras.layers import Dense, Activation
+from keras.layers import Activation
 from keras.callbacks import EarlyStopping
 from keras import backend
 import seaborn as sns
 
 
 def list_imgs(directory, ext="jpg|jpeg|bmp|png|ppm"):
-    return [
-        os.path.join(root, f)
-        for root, _, files in os.walk(directory)
-        for f in files
-        if re.match(r"([\w]+\.(?:" + ext + "))", f.lower())
-    ]
+    return [os.path.join(root, f) for root, _, files in os.walk(directory) for f in files if re.match(r"([\w]+\.(?:" + ext + "))", f.lower())]
 
 
 def list_csv(directory, ext="csv"):
-    return [
-        os.path.join(root, f)
-        for root, _, files in os.walk(directory)
-        for f in files
-        if re.match(r"([\w]+\.(?:" + ext + "))", f.lower())
-    ]
+    return [os.path.join(root, f) for root, _, files in os.walk(directory) for f in files if re.match(r"([\w]+\.(?:" + ext + "))", f.lower())]
 
 
-def plot_history(
-    history, save_graph_img_path, fig_size_width, fig_size_height, lim_font_size
-):
+def plot_history(history, save_graph_img_path, fig_size_width, fig_size_height, lim_font_size):
 
     acc = history.history["accuracy"]
     val_acc = history.history["val_accuracy"]
@@ -133,9 +121,7 @@ def main():
     data_y = np.asarray(data_y)
 
     # 学習用データとテストデータに分割 stratifyの引数でラベルごとの偏りをなくす
-    x_train, x_test, y_train, y_test = train_test_split(
-        data_x, data_y, test_size=0.15, stratify=data_y
-    )
+    x_train, x_test, y_train, y_test = train_test_split(data_x, data_y, test_size=0.15, stratify=data_y)
 
     # 学習データはfloat32型に変換し、正規化(0～1)
     x_train = x_train.astype("float32")
@@ -159,9 +145,7 @@ def main():
     print(y_test.shape, "y test samples")
 
     model = Sequential()
-    model.add(
-        Conv2D(32, (3, 3), padding="same", input_shape=(15, 8, 1), activation="relu")
-    )
+    model.add(Conv2D(32, (3, 3), padding="same", input_shape=(15, 8, 1), activation="relu"))
     model.add(Conv2D(32, (3, 3), padding="same", activation="relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.2))
@@ -172,9 +156,7 @@ def main():
     model.add(Flatten())
     model.add(Dense(num_classes))
     model.add(Activation("softmax"))
-    model.compile(
-        loss="categorical_crossentropy", optimizer=RMSprop(), metrics=["accuracy"]
-    )
+    model.compile(loss="categorical_crossentropy", optimizer=RMSprop(), metrics=["accuracy"])
     model.summary()
 
     epochs = 5
@@ -192,7 +174,7 @@ def main():
     loss = history.history["val_loss"]
 
     plt.rc("font", family="serif")
-    fig = plt.figure()
+    plt.figure()
     plt.plot(range(len(loss)), loss, label="loss", color="blue")
     plt.plot(range(len(acc)), acc, label="acc", color="red")
     plt.xlabel("epochs")

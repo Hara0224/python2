@@ -6,6 +6,7 @@ import os
 
 import sys
 
+
 def main():
     # Determine the directory to search
     # Priority: 1. Command line argument, 2. Script's directory
@@ -15,7 +16,7 @@ def main():
         target_dir = os.path.dirname(os.path.abspath(__file__))
 
     print(f"Searching for .wav files in: {target_dir}")
-    wav_pattern = os.path.join(target_dir, '*.wav')
+    wav_pattern = os.path.join(target_dir, "*.wav")
     wav_files = glob.glob(wav_pattern)
 
     if not wav_files:
@@ -23,7 +24,7 @@ def main():
         return
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    
+
     # Plot all wav files
     for f in wav_files:
         try:
@@ -31,10 +32,10 @@ def main():
             # If stereo, take only one channel for simplicity
             if len(data.shape) > 1:
                 data = data[:, 0]
-            
+
             duration = len(data) / sample_rate
             time = np.linspace(0, duration, len(data))
-            
+
             ax.plot(time, data, label=os.path.basename(f), alpha=0.7)
         except Exception as e:
             print(f"Error reading {f}: {e}")
@@ -56,25 +57,26 @@ def main():
         # Record time (x-axis)
         t_click = event.xdata
         click_coords.append(t_click)
-        
+
         # Draw vertical line
-        ax.axvline(x=t_click, color='r', linestyle='--')
+        ax.axvline(x=t_click, color="r", linestyle="--")
         plt.draw()
-        
+
         print(f"Point {len(click_coords)} selected: {t_click:.4f} s")
 
         # If 2 points selected, calculate diff
         if len(click_coords) == 2:
             dt = abs(click_coords[1] - click_coords[0])
-            print(f"-" * 30)
+            print("-" * 30)
             print(f"Time Difference: {dt:.6f} seconds")
-            print(f"-" * 30)
+            print("-" * 30)
             # Reset for next measurement
             click_coords.clear()
 
-    fig.canvas.mpl_connect('button_press_event', on_click)
+    fig.canvas.mpl_connect("button_press_event", on_click)
     print("Click on the plot to select points.")
     plt.show()
+
 
 if __name__ == "__main__":
     main()

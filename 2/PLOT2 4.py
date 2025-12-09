@@ -34,9 +34,7 @@ def plot_emg_onset_analysis(sample_label="radial_dev", num_trials=3):
         return
 
     # プロットの準備
-    fig, axes = plt.subplots(
-        num_trials, 1, figsize=(12, 4 * num_trials), sharex=True, squeeze=False
-    )
+    fig, axes = plt.subplots(num_trials, 1, figsize=(12, 4 * num_trials), sharex=True, squeeze=False)
     fig.suptitle(f"V10 Onset立ち上がり分析 ({sample_label} - 50ms Window)", fontsize=16)
 
     for i, file_path in enumerate(file_list[:num_trials]):

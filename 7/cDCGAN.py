@@ -156,9 +156,7 @@ discriminator_optimizer = Adam(lr=learning_rate_discriminator, beta_1=beta_1)
 
 generator = build_generator(noise_dim, time_steps, feature_dim, condition_dim)
 discriminator = build_discriminator(time_steps, feature_dim, condition_dim)
-discriminator.compile(
-    loss="binary_crossentropy", optimizer=discriminator_optimizer, metrics=["accuracy"]
-)
+discriminator.compile(loss="binary_crossentropy", optimizer=discriminator_optimizer, metrics=["accuracy"])
 
 noise = Input(shape=(noise_dim,))
 condition = Input(shape=(condition_dim,))
@@ -206,16 +204,12 @@ def update(epoch):
 
     idx = np.random.randint(0, a_sequences.shape[0], batch_size)
     real_sequences = a_sequences[idx]
-    real_conditions = b_sequences[
-        np.random.randint(0, b_sequences.shape[0], batch_size)
-    ].reshape(batch_size, -1)
+    real_conditions = b_sequences[np.random.randint(0, b_sequences.shape[0], batch_size)].reshape(batch_size, -1)
 
     real_labels = np.ones((batch_size, 1)) * 0.9
     fake_labels = np.zeros((batch_size, 1))
 
-    d_loss_real = discriminator.train_on_batch(
-        [real_sequences, real_conditions], real_labels
-    )
+    d_loss_real = discriminator.train_on_batch([real_sequences, real_conditions], real_labels)
     d_loss_fake = discriminator.train_on_batch([gen_sequences, conditions], fake_labels)
     d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
 
@@ -230,11 +224,7 @@ def update(epoch):
     line2.set_data(range(len(g_losses)), g_losses)
 
     if epoch % save_interval == 0:
-        print(
-            "epoch {} [D loss: {} | D accuracy: {}%] [G loss: {}]".format(
-                epoch, d_loss[0], d_loss[1] * 100, g_loss
-            )
-        )
+        print("epoch {} [D loss: {} | D accuracy: {}%] [G loss: {}]".format(epoch, d_loss[0], d_loss[1] * 100, g_loss))
 
     if epoch == music:
         play_music()

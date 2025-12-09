@@ -33,9 +33,7 @@ def plot_emg_onset_analysis(sample_label="radial_dev", num_trials=3):
         print(f"❌ ラベル '{sample_label}' の生データファイルが見つかりませんでした。")
         return
 
-    fig, axes = plt.subplots(
-        num_trials, 1, figsize=(12, 4 * num_trials), sharex=True, squeeze=False
-    )
+    fig, axes = plt.subplots(num_trials, 1, figsize=(12, 4 * num_trials), sharex=True, squeeze=False)
     fig.suptitle(
         f"V11 Onset立ち上がり分析 ({sample_label} - 50ms Window, T_onset={T_ONSET:.2f})",
         fontsize=16,

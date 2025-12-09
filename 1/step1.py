@@ -19,9 +19,7 @@ os.makedirs(save_dir, exist_ok=True)
 m = Myo(mode=emg_mode.RAW)
 m.connect()
 if not m.is_connected():
-    print(
-        "❌ Myoデバイスが見つからないか、接続に失敗しました。プログラムを終了します。"
-    )
+    print("❌ Myoデバイスが見つからないか、接続に失敗しました。プログラムを終了します。")
     exit()
 
 m.set_leds([128, 0, 0], [0, 0, 0])
@@ -52,9 +50,7 @@ m.add_emg_handler(collect_emg)
 m.run_in_background(True)
 
 # === 記録ループ ===
-print(
-    f"\n🟢 記録開始準備OK（{record_duration}秒記録 / {interval_between}秒休憩 × 各ラベル{repeats_per_label}回）"
-)
+print(f"\n🟢 記録開始準備OK（{record_duration}秒記録 / {interval_between}秒休憩 × 各ラベル{repeats_per_label}回）")
 
 counter = 1
 total = len(labels) * repeats_per_label
@@ -63,9 +59,7 @@ for i in range(repeats_per_label):
     for label in labels:
         current_label_name = label  # 現在のラベル名を設定
 
-        print(
-            f"\n🔴 [{counter}/{total}] {label} を記録します...（{record_duration}秒間動作）"
-        )
+        print(f"\n🔴 [{counter}/{total}] {label} を記録します...（{record_duration}秒間動作）")
         m.vibrate(2)
         raw_data = []  # 直前のデータをクリア
 

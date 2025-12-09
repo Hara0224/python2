@@ -24,7 +24,7 @@ ULNAR_INDICES = [2, 3]
 
 # --- Arduino通信設定 ---
 # 注意: Arduinoが接続されているポート番号に合わせて変更してください (例: 'COM3', '/dev/ttyUSB0')
-SERIAL_PORT = 'COM3'
+SERIAL_PORT = "COM3"
 BAUD_RATE = 9600
 SERIAL_TIMEOUT = 1
 
@@ -34,6 +34,7 @@ PREVIOUS_RMS = None
 IS_RUNNING = True
 LAST_PREDICTION = "rest"
 SER = None  # シリアルポートオブジェクト
+
 
 def initialize_buffer():
     for _ in range(WINDOW_SAMPLES):
@@ -90,7 +91,7 @@ def control_output(prediction, current_rms):
             # Arduinoへ停止コマンド送信 (例: '0')
             if SER and SER.is_open:
                 try:
-                    SER.write(b'0')
+                    SER.write(b"0")
                 except Exception as e:
                     print(f"⚠️ シリアル送信エラー: {e}")
         return  # 状態がrestで変化がない場合は何もしない
@@ -104,18 +105,16 @@ def control_output(prediction, current_rms):
 
     if radial_rms_avg > ulnar_rms_avg:
         direction = "radial_dev"
-        command = b'1' # 橈屈用コマンド
+        command = b"1"  # 橈屈用コマンド
     else:
         direction = "ulnar_dev"
-        command = b'2' # 尺屈用コマンド
+        command = b"2"  # 尺屈用コマンド
 
     # 3. 変化チェックと出力
     if direction != LAST_PREDICTION:
-        print(
-            f"-> {'🔴' if direction == 'radial_dev' else '🔵'} [{direction}] 動作実行 (強度: {magnitude:.2f})"
-        )
+        print(f"-> {'🔴' if direction == 'radial_dev' else '🔵'} [{direction}] 動作実行 (強度: {magnitude:.2f})")
         LAST_PREDICTION = direction  # 状態を更新
-        
+
         # Arduinoへ動作コマンド送信
         if SER and SER.is_open:
             try:
@@ -163,12 +162,12 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print(f"❌ モデルファイルが見つかりません: {MODEL_PATH} または {SCALER_PATH}")
         sys.exit()
-    
+
     # Arduinoシリアル接続
     try:
         print(f"🔌 Arduino ({SERIAL_PORT}) に接続を試行中...")
         SER = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=SERIAL_TIMEOUT)
-        time.sleep(2) # Arduinoのリセット待機
+        time.sleep(2)  # Arduinoのリセット待機
         print("✅ Arduino接続完了。")
     except serial.SerialException as e:
         print(f"⚠️ Arduinoに接続できませんでした: {e}")
@@ -219,6 +218,6 @@ if __name__ == "__main__":
         IS_RUNNING = False
         m.disconnect()
         if SER and SER.is_open:
-            SER.write(b'0') # 終了時に停止コマンド送信
+            SER.write(b"0")  # 終了時に停止コマンド送信
             SER.close()
             print("Arduino接続を切断しました。")

@@ -43,9 +43,7 @@ def load_v9_data():
     except FileNotFoundError:
         # V9データがない場合は、V9の処理ロジック全体をここに含める必要があります。
         # (ここではファイルが存在すると仮定して処理を進めます)
-        raise FileNotFoundError(
-            f"V9の特徴量データファイル {FEATURE_DATA_PATH} が見つかりません。"
-        )
+        raise FileNotFoundError(f"V9の特徴量データファイル {FEATURE_DATA_PATH} が見つかりません。")
 
 
 # === 3. メイン実行ブロック (学習と評価) ===
@@ -60,9 +58,7 @@ def main():
     y = df_features["Label"].values
     weights = df_features["SampleWeight"].values
 
-    X_train, X_test, y_train, y_test, weights_train, weights_test = train_test_split(
-        X, y, weights, test_size=0.2, random_state=42, stratify=y
-    )
+    X_train, X_test, y_train, y_test, weights_train, weights_test = train_test_split(X, y, weights, test_size=0.2, random_state=42, stratify=y)
 
     print(f"学習データ数: {len(X_train)}, テストデータ数: {len(X_test)}")
 
@@ -83,27 +79,17 @@ def main():
     # Onsetサンプルのみの評価
     onset_indices = np.where(weights_test == ONSET_WEIGHT_MULTIPLIER)[0]
     if len(onset_indices) > 0:
-        print(
-            f"\n--- Onset/High Priority サンプル (重み {ONSET_WEIGHT_MULTIPLIER}) の評価 ---"
-        )
-        print(
-            classification_report(
-                y_test[onset_indices], y_pred[onset_indices], digits=4
-            )
-        )
+        print(f"\n--- Onset/High Priority サンプル (重み {ONSET_WEIGHT_MULTIPLIER}) の評価 ---")
+        print(classification_report(y_test[onset_indices], y_pred[onset_indices], digits=4))
     else:
-        print(
-            "\n[INFO] テストデータ中にOnset/High Priorityサンプルがありませんでした。"
-        )
+        print("\n[INFO] テストデータ中にOnset/High Priorityサンプルがありませんでした。")
 
     # -----------------------------------------------------------
     # C. モデルとスケーラーの保存
     # -----------------------------------------------------------
     joblib.dump(svm, MODEL_SAVE_PATH)
     joblib.dump(scaler, SCALER_SAVE_PATH)
-    print(
-        f"\n✅ モデルとスケーラーを保存しました: {MODEL_SAVE_PATH}, {SCALER_SAVE_PATH}"
-    )
+    print(f"\n✅ モデルとスケーラーを保存しました: {MODEL_SAVE_PATH}, {SCALER_SAVE_PATH}")
 
 
 if __name__ == "__main__":

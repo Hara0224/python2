@@ -143,12 +143,8 @@ def measure_sensor_delay(proc_latency_ms, motor_latency_ms):
 
     if acc1_delta is not None and acc2_delta is not None:
         total_delay = abs(acc2_delta - acc1_delta)
-        print(
-            f"[ACC_DELAY] {total_delay:.2f} ms (proc={proc_latency_ms:.2f} ms, motor={motor_latency_ms:.2f} ms)"
-        )
-        csv_writer.writerow(
-            [acc1_delta, acc2_delta, total_delay, proc_latency_ms, motor_latency_ms]
-        )
+        print(f"[ACC_DELAY] {total_delay:.2f} ms (proc={proc_latency_ms:.2f} ms, motor={motor_latency_ms:.2f} ms)")
+        csv_writer.writerow([acc1_delta, acc2_delta, total_delay, proc_latency_ms, motor_latency_ms])
         csv_file.flush()
     else:
         print("[TIMEOUT] センサ反応が両方得られませんでした")
@@ -202,15 +198,11 @@ def on_emg(emg, movement):
                     direction = new_direction
                     peak_val = z_scores[ch]
                     peak_time = trigger_time
-                    arrival_at_trigger = (
-                        arrival_queue[0] if len(arrival_queue) > 0 else t_arrival
-                    )
+                    arrival_at_trigger = arrival_queue[0] if len(arrival_queue) > 0 else t_arrival
                     last_trigger_time = trigger_time
                     # ★ 生データ到着から判定までの遅延
                     proc_latency_ms = (trigger_time - t_arrival) * 1000.0
-                    print(
-                        f"[TRIGGER] ch={ch} dir={direction} z={z_scores[ch]:.2f} proc_latency={proc_latency_ms:.2f}ms"
-                    )
+                    print(f"[TRIGGER] ch={ch} dir={direction} z={z_scores[ch]:.2f} proc_latency={proc_latency_ms:.2f}ms")
                     break
     else:
         if z_scores[trigger_ch] > peak_val:

@@ -8,9 +8,7 @@ import os
 # ===== 判定ロジックの定数 (MyoControllerクラスから抽出) =====
 # =========================================================
 
-CSV_PATH = (
-    r"C:\Users\hrsyn\Desktop\Python\emg_data3\emg_rms1.csv"  # RMSデータファイル名
-)
+CSV_PATH = r"C:\Users\hrsyn\Desktop\Python\emg_data3\emg_rms1.csv"  # RMSデータファイル名
 CALIB_DURATION = 3.0  # キャリブレーション秒数
 FS = 200.0  # サンプリング周波数 (Hz)
 
@@ -40,9 +38,7 @@ try:
 
 except FileNotFoundError:
     # ファイルが見つからない場合、デバッグ用のダミーデータを生成
-    print(
-        f"エラー: {CSV_PATH} が見つかりません。デバッグモード: 仮のダミーデータを生成して続行します。"
-    )
+    print(f"エラー: {CSV_PATH} が見つかりません。デバッグモード: 仮のダミーデータを生成して続行します。")
     time_s = np.linspace(0, 10, int(10 * FS), endpoint=False)
     num_samples = len(time_s)
     n_ch = 8
@@ -82,9 +78,7 @@ n_ch = emg_rms.shape[1]
 calib_samples = int(CALIB_DURATION * FS)
 if calib_samples >= len(emg_rms):
     calib_samples = len(emg_rms) // 2
-    print(
-        f"[WARN] データ長が短いため、最初の {calib_samples} サンプルでキャリブレーションを代替しました。"
-    )
+    print(f"[WARN] データ長が短いため、最初の {calib_samples} サンプルでキャリブレーションを代替しました。")
 
 calib_data = emg_rms[:calib_samples, :]
 mean = calib_data.mean(axis=0)
@@ -106,9 +100,7 @@ delta_emg[0, :] = 0
 start_point = thresholds * START_MARGIN  # 0.5T (下限)
 end_point = thresholds * END_MARGIN  # 1.0T (確実性トリガの閾値)
 ceiling_point = thresholds * PEAK_CEILING_MARGIN  # 1.2T (絶対上限)
-low_activity_check_point = thresholds * (
-    START_MARGIN + START_MARGIN_TOLERANCE
-)  # 0.6T (移行チェック用)
+low_activity_check_point = thresholds * (START_MARGIN + START_MARGIN_TOLERANCE)  # 0.6T (移行チェック用)
 
 # 5. 各サンプルのトリガ条件判定
 num_samples = len(emg_rms)
@@ -126,11 +118,7 @@ for ch_idx in target_channels:
         delta = delta_emg[t, ch_idx]
 
         # --- (A) Steep Trigger (急峻トリガ) ---
-        is_steep_trigger = (
-            (rms_now >= start_point[ch_idx])  # 1. START_MARGIN以上
-            and (rms_now < ceiling_point[ch_idx])  # 2. CEILING_MARGIN未満
-            and (delta >= PEAK_DELTA)  # 3. PEAK_DELTA以上の傾き
-        )
+        is_steep_trigger = (rms_now >= start_point[ch_idx]) and (rms_now < ceiling_point[ch_idx]) and (delta >= PEAK_DELTA)  # 1. START_MARGIN以上  # 2. CEILING_MARGIN未満  # 3. PEAK_DELTA以上の傾き
 
         # --- (B) Certainty Trigger (確実性トリガ) ---
         is_certainty_trigger = False
@@ -142,10 +130,7 @@ for ch_idx in target_channels:
             start_lookback = max(0, t - TRANSITION_LOOKBACK)
             lookback_window = rms_history_ch[start_lookback:t]
 
-            if any(
-                rms_val <= low_activity_check_point[ch_idx]
-                for rms_val in lookback_window
-            ):
+            if any(rms_val <= low_activity_check_point[ch_idx] for rms_val in lookback_window):
                 is_transition_from_low = True
 
             is_certainty_trigger = is_over_end_point and is_transition_from_low
@@ -219,9 +204,7 @@ for ch_idx in target_channels:
 
 
 # ターゲットチャンネル数に基づいてサブプロットを調整
-fig, axes = plt.subplots(
-    len(target_channels), 1, figsize=(12, 3.5 * len(target_channels)), sharex=True
-)
+fig, axes = plt.subplots(len(target_channels), 1, figsize=(12, 3.5 * len(target_channels)), sharex=True)
 if len(target_channels) == 1:
     axes = [axes]
 
@@ -238,10 +221,7 @@ for i, ch_idx in enumerate(target_channels):
     # 🌟 グラフタイトル用の情報作成 (Time, Samples from startを削除)
     time_info_str = ""
     if info["samples_peak_from_trigger"] is not None:
-        time_info_str = (
-            f" | Peak Time from Trigger: {info['time_peak_from_trigger']:.3f} s "
-            f"({info['samples_peak_from_trigger']} samples)"
-        )
+        time_info_str = f" | Peak Time from Trigger: {info['time_peak_from_trigger']:.3f} s " f"({info['samples_peak_from_trigger']} samples)"
     else:
         time_info_str = " | Peak Time from Trigger: N/A (No Preceding Steep Trigger)"
 
@@ -308,9 +288,7 @@ for i, ch_idx in enumerate(target_channels):
     # マゼンタ: 急峻トリガが発動した領域 (点として強調)
     steep_indices = np.where(steep_trigger_area[:, ch_idx])[0]
     if steep_indices.size > 0:
-        split_idx = np.split(
-            steep_indices, np.where(np.diff(steep_indices) != 1)[0] + 1
-        )
+        split_idx = np.split(steep_indices, np.where(np.diff(steep_indices) != 1)[0] + 1)
         for s in split_idx:
             # 急峻トリガ領域の点を描画
             ax.plot(
@@ -326,14 +304,9 @@ for i, ch_idx in enumerate(target_channels):
             # E. 最初の急峻トリガポイント (濃い紫の点で強調)
 
             # 凡例には、直前のInitial Steep Triggerがプロットされるように調整
-            if (
-                info["prev_trigger_idx"] is not None
-                and s[0] == info["prev_trigger_idx"]
-            ):
+            if info["prev_trigger_idx"] is not None and s[0] == info["prev_trigger_idx"]:
                 # ラベルに「(Prev to Peak)」を付けて、それがPeakまでの始点であることを明確化
-                trigger_label = (
-                    f"Initial Steep Trigger (Prev to Peak) @ {time_s[s[0]]:.3f} s"
-                )
+                trigger_label = f"Initial Steep Trigger (Prev to Peak) @ {time_s[s[0]]:.3f} s"
             else:
                 trigger_label = None
 
@@ -363,9 +336,7 @@ for i, ch_idx in enumerate(target_channels):
     # シアン: 確実性トリガが発動した領域 (元々散布図なので変更なし)
     certainty_indices = np.where(certainty_trigger_area[:, ch_idx])[0]
     if certainty_indices.size > 0:
-        split_idx = np.split(
-            certainty_indices, np.where(np.diff(certainty_indices) != 1)[0] + 1
-        )
+        split_idx = np.split(certainty_indices, np.where(np.diff(certainty_indices) != 1)[0] + 1)
         for s in split_idx:
             # Steep Triggerと重複しない純粋なCertainty Triggerの領域を抽出
             pure_certainty = s[~steep_trigger_area[s, ch_idx]]
@@ -393,9 +364,7 @@ plt.show()
 # =========================================================
 
 # Deltaのプロットは引き続き線（Deltaの変化は線で見せる方が直感的）
-fig_delta, axes_delta = plt.subplots(
-    len(target_channels), 1, figsize=(12, 3.5 * len(target_channels)), sharex=True
-)
+fig_delta, axes_delta = plt.subplots(len(target_channels), 1, figsize=(12, 3.5 * len(target_channels)), sharex=True)
 if len(target_channels) == 1:
     axes_delta = [axes_delta]
 
@@ -427,9 +396,7 @@ for i, ch_idx in enumerate(target_channels):
     # 閾値を超えたDeltaを強調
     delta_over_thr = delta_emg[:, ch_idx].copy()
     delta_over_thr[delta_emg[:, ch_idx] < PEAK_DELTA] = np.nan
-    ax.plot(
-        time_s, delta_over_thr, color="red", linewidth=2, label="Delta >= PEAK_DELTA"
-    )
+    ax.plot(time_s, delta_over_thr, color="red", linewidth=2, label="Delta >= PEAK_DELTA")
 
     ax.set_title(f"Channel {ch_num} Delta Value")
     ax.set_ylabel("Delta")

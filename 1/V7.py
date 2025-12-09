@@ -75,9 +75,7 @@ def process_emg_data(file_paths):
     mu_rest = np.mean(rest_rms_flat)
     sigma_rest = np.std(rest_rms_flat)
     T_onset = mu_rest + K_SIGMA * sigma_rest
-    print(
-        f"[INFO] Onset検出閾値 (T_onset, RMS): {T_onset:.4f} (μ:{mu_rest:.4f}, σ:{sigma_rest:.4f})"
-    )
+    print(f"[INFO] Onset検出閾値 (T_onset, RMS): {T_onset:.4f} (μ:{mu_rest:.4f}, σ:{sigma_rest:.4f})")
 
     all_features_list = []
     print("\n--- Phase 2: 特徴量抽出と2クラスラベル付け ---")
@@ -127,9 +125,7 @@ def process_emg_data(file_paths):
             previous_rms = current_rms
 
     # 特徴量データフレームを生成
-    df_features = pd.DataFrame(
-        all_features_list, columns=FEATURE_NAMES + ["Label", "SampleWeight"]
-    )
+    df_features = pd.DataFrame(all_features_list, columns=FEATURE_NAMES + ["Label", "SampleWeight"])
     return df_features
 
 
@@ -147,9 +143,7 @@ def main():
 
     # 特徴量データセットをCSVファイルとして保存
     df_features.to_csv(FEATURE_DATA_PATH, index=False)
-    print(
-        f"✅ 特徴量データセット生成完了: {FEATURE_DATA_PATH} (総サンプル数 {len(df_features)})"
-    )
+    print(f"✅ 特徴量データセット生成完了: {FEATURE_DATA_PATH} (総サンプル数 {len(df_features)})")
 
     # -----------------------------------------------------------
     # B. SVMモデルの学習と評価 (V9: Hybrid Model)
@@ -160,9 +154,7 @@ def main():
     y = df_features["Label"].values
     weights = df_features["SampleWeight"].values
 
-    X_train, X_test, y_train, y_test, weights_train, weights_test = train_test_split(
-        X, y, weights, test_size=0.2, random_state=42, stratify=y
-    )
+    X_train, X_test, y_train, y_test, weights_train, weights_test = train_test_split(X, y, weights, test_size=0.2, random_state=42, stratify=y)
 
     print(f"学習データ数: {len(X_train)}, テストデータ数: {len(X_test)}")
 
@@ -183,27 +175,17 @@ def main():
     # Onsetサンプルのみの評価
     onset_indices = np.where(weights_test == ONSET_WEIGHT_MULTIPLIER)[0]
     if len(onset_indices) > 0:
-        print(
-            f"\n--- Onset/High Priority サンプル (重み {ONSET_WEIGHT_MULTIPLIER}) の評価 ---"
-        )
-        print(
-            classification_report(
-                y_test[onset_indices], y_pred[onset_indices], digits=4
-            )
-        )
+        print(f"\n--- Onset/High Priority サンプル (重み {ONSET_WEIGHT_MULTIPLIER}) の評価 ---")
+        print(classification_report(y_test[onset_indices], y_pred[onset_indices], digits=4))
     else:
-        print(
-            "\n[INFO] テストデータ中にOnset/High Priorityサンプルがありませんでした。"
-        )
+        print("\n[INFO] テストデータ中にOnset/High Priorityサンプルがありませんでした。")
 
     # -----------------------------------------------------------
     # C. モデルとスケーラーの保存
     # -----------------------------------------------------------
     joblib.dump(svm, MODEL_SAVE_PATH)
     joblib.dump(scaler, SCALER_SAVE_PATH)
-    print(
-        f"\n✅ モデルとスケーラーを保存しました: {MODEL_SAVE_PATH}, {SCALER_SAVE_PATH}"
-    )
+    print(f"\n✅ モデルとスケーラーを保存しました: {MODEL_SAVE_PATH}, {SCALER_SAVE_PATH}")
 
 
 if __name__ == "__main__":

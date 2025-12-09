@@ -30,14 +30,10 @@ for image_path in image_paths:
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     edges = cv2.Canny(blurred, 50, 150)
 
-    lines = cv2.HoughLinesP(
-        edges, 1, np.pi / 180, threshold=100, minLineLength=100, maxLineGap=10
-    )
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=100, minLineLength=100, maxLineGap=10)
 
     if lines is not None:
-        longest_line = max(
-            lines, key=lambda l: np.hypot(l[0][2] - l[0][0], l[0][3] - l[0][1])
-        )
+        longest_line = max(lines, key=lambda line_val: np.hypot(line_val[0][2] - line_val[0][0], line_val[0][3] - line_val[0][1]))
         x1, y1, x2, y2 = longest_line[0]
 
         angle = calculate_angle_from_line(x1, y1, x2, y2)
@@ -51,9 +47,7 @@ for image_path in image_paths:
         text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)[0]
         x_text = image.shape[1] - text_size[0] - 10
         y_text = 30
-        cv2.putText(
-            image, text, (x_text, y_text), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 3
-        )
+        cv2.putText(image, text, (x_text, y_text), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 3)
         cv2.putText(
             image,
             text,

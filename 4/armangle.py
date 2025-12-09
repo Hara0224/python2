@@ -7,6 +7,7 @@ mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=True, max_num_hands=1)
 mp_drawing = mp.solutions.drawing_utils
 
+
 def calculate_angle(x1, y1, x2, y2):
     """手首→中指基部のベクトルが水平線と成す角度を計算"""
     dx = x2 - x1
@@ -14,6 +15,7 @@ def calculate_angle(x1, y1, x2, y2):
     radians = math.atan2(-dy, -dx)  # OpenCVはY軸が下向きなので -dy
     angle = math.degrees(radians)
     return angle
+
 
 # 入力画像のパス（★差し替えてください）
 image_path = r"C:\Users\AZUKI\Desktop\python\EMG2\img_data_raw5\2up_20250721_112133\0941.jpg"
@@ -36,9 +38,8 @@ if results.multi_hand_landmarks:
 
         # 結果描画
         cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 3)
-        cv2.putText(image, f"{angle:.1f} deg", (255, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-        
+        cv2.putText(image, f"{angle:.1f} deg", (255, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+
         mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
 else:

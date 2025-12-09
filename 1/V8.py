@@ -1,3 +1,4 @@
+from glob import glob
 import pandas as pd
 import numpy as np
 import os
@@ -39,7 +40,6 @@ def calculate_rms(window_data):
 
 def process_emg_data_hybrid(file_paths):
     all_data = []
-    rest_emg_data = []
 
     print("--- Phase 1: データロードと基準値計算 (Window Size 75ms) ---")
 
@@ -52,9 +52,7 @@ def process_emg_data_hybrid(file_paths):
     # V8の結果から仮のDCオフセットとT_onsetを定義 (再計算が必要なため注意)
     dc_offset = np.array([-0.57694795, -0.56773359, -0.63077918, -0.47289579])
     T_onset = 33.7197
-    print(
-        f"[INFO] T_onset and DC Offset assumed from V6/V8 runs. T_onset: {T_onset:.4f}"
-    )
+    print(f"[INFO] T_onset and DC Offset assumed from V6/V8 runs. T_onset: {T_onset:.4f}")
 
     all_features_list = []
     print("\n--- Phase 2: 特徴量抽出と2クラスラベル付け ---")
@@ -108,9 +106,7 @@ def process_emg_data_hybrid(file_paths):
     if not all_features_list:
         return pd.DataFrame()  # 空のDataFrameを返す
 
-    df_result = pd.DataFrame(
-        all_features_list, columns=FEATURE_NAMES + ["Label", "SampleWeight"]
-    )
+    df_result = pd.DataFrame(all_features_list, columns=FEATURE_NAMES + ["Label", "SampleWeight"])
 
     # <<< 変更点 B: 元の動作ラベルを保存 >>>
     # 方向決定のために、元のラベルも保存するフィールドを設ける (ただしSVM学習には使わない)
@@ -126,7 +122,7 @@ def process_emg_data_hybrid(file_paths):
 def main():
     all_csv_files = glob.glob(os.path.join(SAVE_DIR, "*.csv"))  # globのインポートが必要
     if not all_csv_files:
-        print(f"❌ CSVファイルが見つかりません。")
+        print("❌ CSVファイルが見つかりません。")
         return
 
     # (注意: このコードはDCオフセット/T_onsetの再計算ロジックが省略されているため、
@@ -137,6 +133,13 @@ def main():
     # B. SVMモデルの学習と評価 (V9: Hybrid Model)
     # -----------------------------------------------------------
     df_features = process_emg_data_hybrid(all_csv_files)  # V9データ生成
+
+    # fix: 変数を使用（デバッグ表示）
+    if not df_features.empty:
+        print(f"Features shape: {df_features.shape}")
+        print(df_features.head())
+    else:
+        print("Warning: df_features is empty. (process_emg_data_hybrid needs implementation)")
 
     # ... (V8と同じ学習・評価・保存ロジックをここに含める) ...
     # ...

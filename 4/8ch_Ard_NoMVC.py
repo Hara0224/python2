@@ -145,9 +145,7 @@ def on_emg(emg, movement):
                 # MVCが未設定なら、動的に学習（上限を広げすぎないように）
                 Smax_cal = peak_S
             else:
-                Smax_cal = max(
-                    Smax_cal * 0.995, Smax_cal
-                )  # 緩やかに減衰して過適応を避ける
+                Smax_cal = max(Smax_cal * 0.995, Smax_cal)  # 緩やかに減衰して過適応を避ける
                 Smax_cal = max(Smax_cal, peak_S)
 
             # 0-100% 正規化
@@ -157,9 +155,7 @@ def on_emg(emg, movement):
 
             # 出力（ここがArduino送信ポイント）
             hit_time = pending_hit_time if pending_hit_time is not None else now
-            print(
-                f"[HIT] t={hit_time:.3f} strength={strength:3d}  peak_S={peak_S:.3f}  T={T:.3f}"
-            )
+            print(f"[HIT] t={hit_time:.3f} strength={strength:3d}  peak_S={peak_S:.3f}  T={T:.3f}")
 
             # 例：Arduinoに送る（有効化する場合は上のserialを開く）
             # ser.write(f"HIT,{strength}\n".encode())
@@ -205,9 +201,7 @@ def calibrate_and_run():
     print(f"基線: mu0={mu0:.3f}, sigma0={sigma0:.3f}")
 
     # 傾きしきい値（相対）
-    print(
-        f"傾きしきい値は {SLOPE_THR_FACTOR} * sigma0 = {SLOPE_THR_FACTOR * sigma0:.3f}"
-    )
+    print(f"傾きしきい値は {SLOPE_THR_FACTOR} * sigma0 = {SLOPE_THR_FACTOR * sigma0:.3f}")
 
     calibrated = True
     print("=== 検出開始：スナップするとHITが表示されます（Ctrl+Cで終了） ===")

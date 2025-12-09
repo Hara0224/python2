@@ -8,13 +8,12 @@ last_pressed = None
 
 
 def main():
+    last_pressed = None
     print("動作開始: 0から7までの数字を押すと動作します。'exit' で終了")
 
     while True:
         for key in "01234567":  # 0から7までのキーを順にチェック
-            if (
-                keyboard.is_pressed(key) and last_pressed != key
-            ):  # キーが押されていて、前回押されたキーと異なる場合
+            if keyboard.is_pressed(key) and last_pressed != key:  # キーが押されていて、前回押されたキーと異なる場合
                 print("{} を送信します".format(key))
                 ser.write(key.encode())  # 文字をバイトとして送信
                 last_pressed = key  # 現在のキーを記録

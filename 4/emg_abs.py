@@ -12,9 +12,7 @@ CALIB_DURATION = 0.25  # キャリブ時間 [s]
 
 # ========= データ読み込み =========
 # CSV形式: Timestamp,CH1,CH2,...,CH8
-df = pd.read_csv(
-    r"C:\Users\AZUKI\Desktop\python\EMG2\20250729\emg_data_11_trim\emgraw_1_20250729_130655.csv"
-)
+df = pd.read_csv(r"C:\Users\AZUKI\Desktop\python\EMG2\20250729\emg_data_11_trim\emgraw_1_20250729_130655.csv")
 time = df["Timestamp"].values.astype(float)
 emg_raw = df.iloc[:, 1:].values  # CH1〜CH8
 n_samples, n_channels = emg_raw.shape
@@ -79,9 +77,7 @@ for i in range(n_samples):
             in_trigger = False  # トリガ終了
 
     # 保存（Timestamp のみ）
-    rms_all.append(
-        [t] + [np.sqrt(np.mean(np.square(rms_buf[ch]))) for ch in range(n_channels)]
-    )
+    rms_all.append([t] + [np.sqrt(np.mean(np.square(rms_buf[ch]))) for ch in range(n_channels)])
     ema_all.append([t] + ema.tolist())
     z_all.append([t] + z_vals.tolist())
     trig_all.append(
@@ -99,10 +95,6 @@ col_names = ["Timestamp"] + [f"CH{c+1}" for c in range(n_channels)]
 pd.DataFrame(rms_all, columns=col_names).to_csv("emg_rms.csv", index=False)
 pd.DataFrame(ema_all, columns=col_names).to_csv("emg_ema.csv", index=False)
 pd.DataFrame(z_all, columns=col_names).to_csv("emg_zscore.csv", index=False)
-pd.DataFrame(
-    trig_all, columns=["Timestamp", "TriggerFlag", "TriggerCH", "PeakVal"]
-).to_csv("emg_trigger.csv", index=False)
+pd.DataFrame(trig_all, columns=["Timestamp", "TriggerFlag", "TriggerCH", "PeakVal"]).to_csv("emg_trigger.csv", index=False)
 
-print(
-    "処理完了：emg_rms.csv, emg_ema.csv, emg_zscore.csv, emg_trigger.csv を保存しました。"
-)
+print("処理完了：emg_rms.csv, emg_ema.csv, emg_zscore.csv, emg_trigger.csv を保存しました。")

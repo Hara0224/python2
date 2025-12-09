@@ -16,6 +16,8 @@
 # model.summary()
 
 
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 import time
 import sys
 import numpy as np
@@ -73,17 +75,7 @@ for x in range(len(JES_labels)):
 
     for y in range(len(JES_labels)):
         # print(P.count(JES_labels[y]))
-        JES_COUNT.append(
-            "["
-            + JES_labels[y]
-            + "]--------------"
-            + "["
-            + str(P.count(JES_labels[y]))
-            + "]--------------"
-            + "["
-            + str((P.count(JES_labels[y])) / sample * 100)
-            + " %]"
-        )
+        JES_COUNT.append("[" + JES_labels[y] + "]--------------" + "[" + str(P.count(JES_labels[y])) + "]--------------" + "[" + str((P.count(JES_labels[y])) / sample * 100) + " %]")
     JES_COUNT.append("======================================")
     JES_COUNT.append("")
 
@@ -91,13 +83,9 @@ for x in range(len(JES_labels)):
         JES_true.append(JES_labels[x])
 
 
-from sklearn.metrics import confusion_matrix
-import seaborn as sns
-from sklearn.metrics import confusion_matrix
-
 cm = confusion_matrix(JES_true, JES_pred)
 print(cm)
-import seaborn as sns
+
 
 sns.heatmap(cm, annot=True, fmt="g", square=True)
 plt.show()

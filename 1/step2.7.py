@@ -139,9 +139,7 @@ def relabel_for_onset(df, window_size, M, sd_multiplier, feature_cols):
     SD_rms = rest_data[rest_rms_cols].values.std()
 
     T_noise = M_rms + sd_multiplier * SD_rms
-    print(
-        f"ノイズレベル閾値 (T_noise): {T_noise:.4f} (平均:{M_rms:.4f}, SD:{SD_rms:.4f})"
-    )
+    print(f"ノイズレベル閾値 (T_noise): {T_noise:.4f} (平均:{M_rms:.4f}, SD:{SD_rms:.4f})")
 
     new_labels = np.full(len(X_raw), LABEL_MAP["rest"], dtype=int)
 
@@ -181,9 +179,7 @@ def relabel_for_onset(df, window_size, M, sd_multiplier, feature_cols):
     X_new = X_raw.drop(columns=["Label"])
     y_new = new_labels
 
-    print(
-        f"新しいPositiveサンプル数: {np.sum(y_new != 0)} (全体の {np.sum(y_new != 0) / len(y_new) * 100:.2f}%)"
-    )
+    print(f"新しいPositiveサンプル数: {np.sum(y_new != 0)} (全体の {np.sum(y_new != 0) / len(y_new) * 100:.2f}%)")
     return X_new, y_new
 
 
@@ -197,17 +193,13 @@ def relabel_and_train_onset_svm():
     print(f"総データサンプル数 (生): {len(combined_df)}")
 
     # 2. Onset特化ラベリングと特徴量抽出の実行
-    X_onset, y_onset = relabel_for_onset(
-        combined_df, WINDOW_SIZE, M_SAMPLES, ONSET_SD_MULTIPLIER, FEATURE_COLS
-    )
+    X_onset, y_onset = relabel_for_onset(combined_df, WINDOW_SIZE, M_SAMPLES, ONSET_SD_MULTIPLIER, FEATURE_COLS)
 
     if len(X_onset) == 0:
         return
 
     # 3. データの分割
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_onset.values, y_onset, test_size=0.2, random_state=42, stratify=y_onset
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X_onset.values, y_onset, test_size=0.2, random_state=42, stratify=y_onset)
     print(f"学習データ数: {len(X_train)}, テストデータ数: {len(X_test)}")
 
     # 4. データの正規化
@@ -216,9 +208,7 @@ def relabel_and_train_onset_svm():
     X_test_scaled = scaler.transform(X_test)
 
     # 5. SVMモデルの学習
-    print(
-        f"\n--- SVM Onsetモデル学習開始 (C: {SVM_C}, Gamma: {SVM_GAMMA}, Weighted: Balanced) ---"
-    )
+    print(f"\n--- SVM Onsetモデル学習開始 (C: {SVM_C}, Gamma: {SVM_GAMMA}, Weighted: Balanced) ---")
 
     svm_model = SVC(
         kernel="rbf",
@@ -233,14 +223,8 @@ def relabel_and_train_onset_svm():
     y_pred = svm_model.predict(X_test_scaled)
 
     print("\n--- SVM Onset Classification Report ---")
-    target_names = [
-        name for name, val in sorted(LABEL_MAP.items(), key=lambda item: item[1])
-    ]
-    print(
-        classification_report(
-            y_test, y_pred, target_names=target_names, zero_division=0
-        )
-    )
+    target_names = [name for name, val in sorted(LABEL_MAP.items(), key=lambda item: item[1])]
+    print(classification_report(y_test, y_pred, target_names=target_names, zero_division=0))
 
     # 7. モデルの保存
     joblib.dump(svm_model, MODEL_FILE)

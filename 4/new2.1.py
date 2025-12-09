@@ -141,12 +141,7 @@ def on_emg(emg, movement):
                 Smax_peak = max(Smax_peak, peak_S)
 
             # HIT強度
-            lo = min(
-                [
-                    mu_peak[i] + K_SIGMA * sigma_peak[i]
-                    for i in range(len(peak_channels))
-                ]
-            )
+            lo = min([mu_peak[i] + K_SIGMA * sigma_peak[i] for i in range(len(peak_channels))])
             hi = max(lo + 1e-6, Smax_peak)
             strength = int(np.clip((peak_S - lo) / (hi - lo) * 100.0, 0, 100))
 

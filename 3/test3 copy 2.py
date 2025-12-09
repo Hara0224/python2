@@ -170,9 +170,7 @@ def on_emg(emg, moving):
             else:
                 send_motor_command("UP")
             acc1, acc2, total_sensor_delay = measure_sensor_delay()
-            print(
-                f"[{trigger}] ch{ch+1} z={z:.2f} slope={slope:.3f} rms={rms_vals[ch]:.2f} sensor_delay={total_sensor_delay}"
-            )
+            print(f"[{trigger}] ch{ch+1} z={z:.2f} slope={slope:.3f} rms={rms_vals[ch]:.2f} sensor_delay={total_sensor_delay}")
 
 
 # ===== キャリブレーション =====
@@ -189,9 +187,7 @@ def calibrate(myo, duration=CALIB_DURATION):
                 cal_buf[ch].append(compute_rms(rms_buf[ch]))
     for ch in range(8):
         arr = np.array(cal_buf[ch]) if len(cal_buf[ch]) > 0 else np.array([0.0])
-        std_ch = (
-            float(np.std(arr, ddof=1)) if arr.size > 1 else float(np.std(arr, ddof=0))
-        )
+        std_ch = float(np.std(arr, ddof=1)) if arr.size > 1 else float(np.std(arr, ddof=0))
         if std_ch < 1e-6 or np.isnan(std_ch):
             std_ch = 1e-6
         mean[ch] = float(np.mean(arr))

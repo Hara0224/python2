@@ -46,9 +46,7 @@ def extract_features(data, window_size, M, feature_cols):
         current_window_signal = data.iloc[i - window_size + 1 : i + 1][feature_cols]
 
         # 過去のウィンドウ
-        past_window_signal = data.iloc[i - window_size + 1 - M : i + 1 - M][
-            feature_cols
-        ]
+        past_window_signal = data.iloc[i - window_size + 1 - M : i + 1 - M][feature_cols]
 
         # 1. 絶対RMS (R_k)
         rms = np.sqrt(np.mean(current_window_signal**2, axis=0))
@@ -85,9 +83,7 @@ def load_data_from_directory(data_dir, channels, label_map):
             required_cols = channel_cols + ["Label"]
 
             if not all(col in df.columns for col in required_cols):
-                print(
-                    f"警告: {file_path} に必要なカラムが見つかりませんでした。スキップします。"
-                )
+                print(f"警告: {file_path} に必要なカラムが見つかりませんでした。スキップします。")
                 continue
 
             df_selected = df[required_cols].copy()
@@ -122,14 +118,10 @@ def train_model():
     X, y = extract_features(combined_df, WINDOW_SIZE, M_SAMPLES, feature_cols=emg_cols)
 
     if len(X) == 0:
-        print(
-            "エラー: 特徴量抽出後のデータが空です。ウィンドウサイズやM_SAMPLESの設定を確認してください。"
-        )
+        print("エラー: 特徴量抽出後のデータが空です。ウィンドウサイズやM_SAMPLESの設定を確認してください。")
         return
 
-    feature_names = [f"RMS_{col}" for col in emg_cols] + [
-        f"DeltaRMS_{col}" for col in emg_cols
-    ]
+    feature_names = [f"RMS_{col}" for col in emg_cols] + [f"DeltaRMS_{col}" for col in emg_cols]
 
     print(f"特徴量抽出後のサンプル数: {len(X)}")
     print(f"生成された特徴量 ({len(feature_names)}次元): {', '.join(feature_names)}")
@@ -146,9 +138,7 @@ def train_model():
     X_scaled = scaler.fit_transform(X)
 
     # 4. 学習/テストデータ分割
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=0.2, random_state=42, stratify=y
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42, stratify=y)
     print(f"\n学習データ数: {len(X_train)}, テストデータ数: {len(X_test)}")
 
     # 5. SVMモデルの学習
@@ -161,14 +151,8 @@ def train_model():
     y_pred = svm_model.predict(X_test)
 
     print("\n--- Classification Report ---")
-    target_names = [
-        name for name, val in sorted(LABEL_MAP.items(), key=lambda item: item[1])
-    ]
-    print(
-        classification_report(
-            y_test, y_pred, target_names=target_names, zero_division=0
-        )
-    )
+    target_names = [name for name, val in sorted(LABEL_MAP.items(), key=lambda item: item[1])]
+    print(classification_report(y_test, y_pred, target_names=target_names, zero_division=0))
 
     # 7. モデルとスケーラーの保存
     joblib.dump(svm_model, MODEL_FILE)

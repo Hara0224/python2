@@ -125,9 +125,7 @@ def on_emg(emg, movement):
             strength = int(np.clip((peak_S6 - lo) / (hi - lo) * 100.0, 0, 100))
 
             hit_time = pending_hit_time if pending_hit_time is not None else now
-            print(
-                f"[HIT] t={hit_time:.3f} strength={strength:3d} ch6_peak={peak_S6:.3f} T6={T6:.3f}"
-            )
+            print(f"[HIT] t={hit_time:.3f} strength={strength:3d} ch6_peak={peak_S6:.3f} T6={T6:.3f}")
 
             # Arduino送信
             try:

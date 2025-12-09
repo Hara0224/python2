@@ -5,6 +5,7 @@ from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
+
 # --------------------------
 # モデル定義（学習時と同じ構造にする）
 # --------------------------
@@ -21,10 +22,12 @@ class EMG_CNN(nn.Module):
             nn.Flatten(),
             nn.Linear(32 * 3, 64),
             nn.ReLU(),
-            nn.Linear(64, 3)  # ← ラベルが3クラスの場合
+            nn.Linear(64, 3),  # ← ラベルが3クラスの場合
         )
+
     def forward(self, x):
         return self.net(x)
+
 
 # --------------------------
 # データ読み込み
@@ -89,7 +92,7 @@ print(f"✅ テスト精度: {accuracy * 100:.2f}%")
 # 精度ヒストグラム
 # --------------------------
 plt.figure(figsize=(6, 4))
-plt.hist(all_preds, bins=np.arange(-0.5, 3.5, 1), rwidth=0.8, align='mid', color='skyblue')
+plt.hist(all_preds, bins=np.arange(-0.5, 3.5, 1), rwidth=0.8, align="mid", color="skyblue")
 plt.xticks([0, 1, 2], ["down", "neutral", "up"])
 plt.title("Predicted Class Distribution")
 plt.xlabel("Class")
@@ -105,6 +108,6 @@ cm = confusion_matrix(all_targets, all_preds)
 # 正しい書き方：
 disp = ConfusionMatrixDisplay(cm, display_labels=["up", "down", "neutral"])
 
-disp.plot(cmap='Blues')
+disp.plot(cmap="Blues")
 plt.title("Confusion Matrix")
 plt.show()

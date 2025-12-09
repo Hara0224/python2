@@ -119,9 +119,7 @@ def calibrate(duration=CALIB_DURATION):
                 cal_buf[ch].append(compute_rms(rms_buf[ch]))
     for ch in range(8):
         arr = np.array(cal_buf[ch]) if len(cal_buf[ch]) > 0 else np.array([0.0])
-        std_ch = (
-            float(np.std(arr, ddof=1)) if arr.size > 1 else float(np.std(arr, ddof=0))
-        )
+        std_ch = float(np.std(arr, ddof=1)) if arr.size > 1 else float(np.std(arr, ddof=0))
         if std_ch < 1e-6 or np.isnan(std_ch):
             std_ch = 1e-6
         mean[ch] = float(np.mean(arr))
@@ -179,9 +177,7 @@ def measure_sensor_delay_async(proc_latency_ms, motor_latency_ms, dir_at_trigger
     if acc1_delta is not None and acc2_delta is not None:
         total_delay = abs(acc2_delta - acc1_delta)
         utc_ts, local = utc_and_local()
-        print(
-            f"[ACC_DELAY] total={total_delay:.2f} ms (proc={proc_latency_ms:.2f}, motor={motor_latency_ms:.2f})"
-        )
+        print(f"[ACC_DELAY] total={total_delay:.2f} ms (proc={proc_latency_ms:.2f}, motor={motor_latency_ms:.2f})")
         csv_writer.writerow(
             [
                 utc_ts,
@@ -246,14 +242,10 @@ def on_emg(emg, movement):
                     direction = new_direction
                     peak_val = z_scores[ch]
                     peak_time = trigger_time
-                    arrival_at_trigger = (
-                        arrival_queue[0] if len(arrival_queue) > 0 else t_arrival
-                    )
+                    arrival_at_trigger = arrival_queue[0] if len(arrival_queue) > 0 else t_arrival
                     proc_latency_ms = (trigger_time - arrival_at_trigger) * 1000.0
                     last_trigger_time = trigger_time
-                    print(
-                        f"[TRIGGER] ch={ch+1} dir={direction} z={z_scores[ch]:.2f} proc_latency={proc_latency_ms:.2f}ms"
-                    )
+                    print(f"[TRIGGER] ch={ch+1} dir={direction} z={z_scores[ch]:.2f} proc_latency={proc_latency_ms:.2f}ms")
                     break
     else:
         # ピーク更新

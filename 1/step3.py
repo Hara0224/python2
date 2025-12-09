@@ -49,9 +49,7 @@ def on_emg(emg, moving_avg):
             emg_buffer.popleft()
 
         # 4. 特徴量計算のためのデータ準備
-        hist_array = np.array(emg_buffer).reshape(
-            M_SAMPLES + WINDOW_SIZE, len(CHANNELS)
-        )
+        hist_array = np.array(emg_buffer).reshape(M_SAMPLES + WINDOW_SIZE, len(CHANNELS))
 
         # 最新のRMS計算 (R_k)
         latest_window = hist_array[-WINDOW_SIZE:]
@@ -72,12 +70,8 @@ def on_emg(emg, moving_avg):
         # 6. 予測結果が変化した場合のみ出力
         current_time = time.time()
         if prediction != last_prediction:
-            latency = (
-                current_time - last_classification_time
-            ) * 1000  # 遅延をミリ秒で計算
-            print(
-                f"[{current_time:.3f}s] -> PREDICTED: {labels.get(prediction)} | Latency since last: {latency:.2f}ms"
-            )
+            latency = (current_time - last_classification_time) * 1000  # 遅延をミリ秒で計算
+            print(f"[{current_time:.3f}s] -> PREDICTED: {labels.get(prediction)} | Latency since last: {latency:.2f}ms")
             last_prediction = prediction
             last_classification_time = current_time
 

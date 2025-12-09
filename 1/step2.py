@@ -97,9 +97,7 @@ def load_data_from_directory(data_dir, channels, label_map):
             required_cols = channel_cols + ["Label"]
 
             if not all(col in df.columns for col in required_cols):
-                print(
-                    f"警告: {file_path} に必要なカラムが見つかりませんでした。スキップします。"
-                )
+                print(f"警告: {file_path} に必要なカラムが見つかりませんでした。スキップします。")
                 continue
 
             df_selected = df[required_cols].copy()
@@ -142,9 +140,7 @@ def train_model():
 
     # 抽出後のデータサイズチェック
     if len(X) == 0:
-        print(
-            "エラー: 特徴量抽出後のデータが空です。ウィンドウサイズやM_SAMPLESの設定を確認してください。"
-        )
+        print("エラー: 特徴量抽出後のデータが空です。ウィンドウサイズやM_SAMPLESの設定を確認してください。")
         return
 
     print(f"特徴量抽出後のサンプル数: {len(X)}")
@@ -154,9 +150,7 @@ def train_model():
     X_scaled = scaler.fit_transform(X)
 
     # 4. 学習/テストデータ分割
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=0.2, random_state=42, stratify=y
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42, stratify=y)
     print(f"学習データ数: {len(X_train)}, テストデータ数: {len(X_test)}")
 
     # 5. SVMモデルの学習
@@ -167,14 +161,8 @@ def train_model():
     y_pred = svm_model.predict(X_test)
 
     print("\n--- Classification Report ---")
-    target_names = [
-        name for name, val in sorted(LABEL_MAP.items(), key=lambda item: item[1])
-    ]
-    print(
-        classification_report(
-            y_test, y_pred, target_names=target_names, zero_division=0
-        )
-    )
+    target_names = [name for name, val in sorted(LABEL_MAP.items(), key=lambda item: item[1])]
+    print(classification_report(y_test, y_pred, target_names=target_names, zero_division=0))
 
     # 7. モデルとスケーラーの保存
     joblib.dump(svm_model, MODEL_FILE)

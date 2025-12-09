@@ -181,9 +181,7 @@ def on_emg(emg, movement):
                     direction = new_direction
                     peak_val = z_scores[ch]
                     peak_time = trigger_time
-                    arrival_at_trigger = (
-                        arrival_queue[0] if len(arrival_queue) > 0 else t_arrival
-                    )
+                    arrival_at_trigger = arrival_queue[0] if len(arrival_queue) > 0 else t_arrival
                     last_trigger_time = trigger_time
                     print(f"[TRIGGER] ch={ch} dir={direction} z={z_scores[ch]:.2f}")
                     break

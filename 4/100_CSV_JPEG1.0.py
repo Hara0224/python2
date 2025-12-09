@@ -121,9 +121,7 @@ for _ in range(10):
 print("✅ カメラ準備完了")
 
 # === メイン記録ループ ===
-print(
-    f"🟢 記録準備完了。{record_duration}秒間、各ラベルを{repeats_per_label}回記録します。"
-)
+print(f"🟢 記録準備完了。{record_duration}秒間、各ラベルを{repeats_per_label}回記録します。")
 counter = 1
 total = len(labels) * repeats_per_label
 
@@ -143,9 +141,7 @@ try:
                 first_emg_time = None
 
             session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-            img_thread = threading.Thread(
-                target=capture_images, args=(label, session_id, cap), daemon=True
-            )
+            img_thread = threading.Thread(target=capture_images, args=(label, session_id, cap), daemon=True)
             img_thread.start()
 
             record_end = time.time() + record_duration

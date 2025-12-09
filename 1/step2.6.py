@@ -46,9 +46,7 @@ def extract_features(data, window_size, M, feature_cols):
 
     for i in range(start_index, N_samples):
         current_window_signal = data.iloc[i - window_size + 1 : i + 1][feature_cols]
-        past_window_signal = data.iloc[i - window_size + 1 - M : i + 1 - M][
-            feature_cols
-        ]
+        past_window_signal = data.iloc[i - window_size + 1 - M : i + 1 - M][feature_cols]
 
         feature_vector = []
 
@@ -131,11 +129,7 @@ def train_model():
         return
 
     # 特徴量名のリスト (4ch * 3種類 = 12次元)
-    feature_names = (
-        [f"RMS_{col}" for col in emg_cols]
-        + [f"DeltaRMS_{col}" for col in emg_cols]
-        + [f"WL_{col}" for col in emg_cols]
-    )
+    feature_names = [f"RMS_{col}" for col in emg_cols] + [f"DeltaRMS_{col}" for col in emg_cols] + [f"WL_{col}" for col in emg_cols]
 
     print(f"特徴量抽出後のサンプル数: {len(X)}")
     print(f"生成された特徴量 ({len(feature_names)}次元): {', '.join(feature_names)}")
@@ -150,9 +144,7 @@ def train_model():
     X_processed = X
 
     # 4. 学習/テストデータ分割
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_processed, y, test_size=0.2, random_state=42, stratify=y
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, random_state=42, stratify=y)
     print(f"\n学習データ数: {len(X_train)}, テストデータ数: {len(X_test)}")
 
     # 5. Random Forest モデルの学習
@@ -170,14 +162,8 @@ def train_model():
     y_pred = rf_model.predict(X_test)
 
     print("\n--- Classification Report ---")
-    target_names = [
-        name for name, val in sorted(LABEL_MAP.items(), key=lambda item: item[1])
-    ]
-    print(
-        classification_report(
-            y_test, y_pred, target_names=target_names, zero_division=0
-        )
-    )
+    target_names = [name for name, val in sorted(LABEL_MAP.items(), key=lambda item: item[1])]
+    print(classification_report(y_test, y_pred, target_names=target_names, zero_division=0))
 
     # 7. モデルの保存
     joblib.dump(rf_model, MODEL_FILE)

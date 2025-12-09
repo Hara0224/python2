@@ -4,6 +4,7 @@ import glob
 import os
 import sys
 
+
 def main():
     # Determine directory
     if len(sys.argv) > 1:
@@ -11,7 +12,7 @@ def main():
     else:
         target_dir = os.path.dirname(os.path.abspath(__file__))
 
-    wav_pattern = os.path.join(target_dir, '*.wav')
+    wav_pattern = os.path.join(target_dir, "*.wav")
     wav_files = glob.glob(wav_pattern)
 
     if not wav_files:
@@ -46,7 +47,7 @@ def main():
     # Process file
     try:
         sample_rate, data = wavfile.read(selected_file)
-        
+
         # Calculate indices
         n_start = int(start_trim * sample_rate)
         n_end = int(end_trim * sample_rate)
@@ -59,7 +60,7 @@ def main():
 
         # Slice
         if n_end > 0:
-            trimmed_data = data[n_start : -n_end]
+            trimmed_data = data[n_start:-n_end]
         else:
             trimmed_data = data[n_start:]
 
@@ -69,7 +70,7 @@ def main():
 
         # Save
         wavfile.write(output_file, sample_rate, trimmed_data)
-        
+
         original_duration = total_frames / sample_rate
         new_duration = trimmed_data.shape[0] / sample_rate
 
@@ -79,6 +80,7 @@ def main():
 
     except Exception as e:
         print(f"An error occurred processing the file: {e}")
+
 
 if __name__ == "__main__":
     main()

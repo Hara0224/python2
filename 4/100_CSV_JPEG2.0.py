@@ -106,9 +106,7 @@ def capture_images(label, session_id, cap):
             continue
         elapsed = time.time() - start_time
         elapsed_str = f"{elapsed:.3f}"
-        cv2.putText(
-            frame, elapsed_str, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2
-        )
+        cv2.putText(frame, elapsed_str, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
         filename = os.path.join(img_dir, f"{elapsed_str.replace('.', '')}.jpg")
         cv2.imwrite(filename, frame)
 
@@ -125,9 +123,7 @@ for _ in range(10):
 print("✅ カメラ準備完了")
 
 # === メイン記録ループ ===
-print(
-    f"🟢 記録準備完了。{record_duration}秒 × 各ラベル × {repeats_per_label}回 記録します。"
-)
+print(f"🟢 記録準備完了。{record_duration}秒 × 各ラベル × {repeats_per_label}回 記録します。")
 counter = 1
 total = len(labels) * repeats_per_label
 
@@ -144,9 +140,7 @@ try:
             with first_emg_lock:
                 first_emg_time = None
             session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-            img_thread = threading.Thread(
-                target=capture_images, args=(label, session_id, cap), daemon=True
-            )
+            img_thread = threading.Thread(target=capture_images, args=(label, session_id, cap), daemon=True)
             img_thread.start()
             record_end = time.time() + record_duration
             while time.time() < record_end and not stop_flag:

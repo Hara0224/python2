@@ -149,10 +149,7 @@ def send_motor_command(direction, t_trigger):
         motor_delay = (hit_time - t_send) * 1000
         total_delay = (hit_time - t_trigger) * 1000
 
-        print(
-            f"[HIT] {direction} sw={sw_delay:.1f}ms pc={pc_delay:.1f}ms "
-            f"motor={motor_delay:.1f}ms total={total_delay:.1f}ms"
-        )
+        print(f"[HIT] {direction} sw={sw_delay:.1f}ms pc={pc_delay:.1f}ms " f"motor={motor_delay:.1f}ms total={total_delay:.1f}ms")
 
         csv_writer.writerow(
             [

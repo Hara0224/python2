@@ -37,9 +37,7 @@ def plot_emg_delta_onset_analysis(sample_label="radial_dev", num_trials=2):
         return
 
     # 2行 (RMS/Delta RMS) × num_trials列のサブプロットを作成
-    fig, axes = plt.subplots(
-        num_trials, 1, figsize=(12, 5 * num_trials), sharex=True, squeeze=False
-    )
+    fig, axes = plt.subplots(num_trials, 1, figsize=(12, 5 * num_trials), sharex=True, squeeze=False)
     fig.suptitle(f"V12 Delta RMS Onset比較 ({sample_label} - Window 50ms)", fontsize=16)
 
     for i, file_path in enumerate(file_list[:num_trials]):

@@ -31,9 +31,7 @@ for file_path in [csv_files]:
     end_threshold = max_time - end_cut
 
     # 範囲内のデータを残す
-    df_trimmed = df[
-        (df["Timestamp"] >= start_threshold) & (df["Timestamp"] <= end_threshold)
-    ].reset_index(drop=True)
+    df_trimmed = df[(df["Timestamp"] >= start_threshold) & (df["Timestamp"] <= end_threshold)].reset_index(drop=True)
 
     # 保存ファイル名と出力パス
     filename = os.path.basename(file_path)

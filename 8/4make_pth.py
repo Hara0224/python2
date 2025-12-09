@@ -12,20 +12,21 @@ y_test = data["y_test"]
 
 print("✅ データ読み込み完了:", X_train.shape, y_train.shape)
 
+
 class EMG_CNN(nn.Module):
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv1d(8, 16, kernel_size=3),  # (8, 20) -> (16, 18)
             nn.ReLU(),
-            nn.MaxPool1d(2),                 # (16, 18) -> (16, 9)
-            nn.Conv1d(16, 32, kernel_size=3), # -> (32, 7)
+            nn.MaxPool1d(2),  # (16, 18) -> (16, 9)
+            nn.Conv1d(16, 32, kernel_size=3),  # -> (32, 7)
             nn.ReLU(),
-            nn.MaxPool1d(2),                 # -> (32, 3)
+            nn.MaxPool1d(2),  # -> (32, 3)
             nn.Flatten(),
-            nn.Linear(32 * 3, 64),           # ← 変更点！
+            nn.Linear(32 * 3, 64),  # ← 変更点！
             nn.ReLU(),
-            nn.Linear(64, 3)                 # クラス数：3 (up/down/neutral)
+            nn.Linear(64, 3),  # クラス数：3 (up/down/neutral)
         )
 
     def forward(self, x):
@@ -36,10 +37,8 @@ class EMG_CNN(nn.Module):
 batch_size = 32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32),
-                              torch.tensor(y_train, dtype=torch.long))
-test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32),
-                             torch.tensor(y_test, dtype=torch.long))
+train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long))
+test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size)

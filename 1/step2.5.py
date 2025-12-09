@@ -46,9 +46,7 @@ def extract_features(data, window_size, M, feature_cols):
 
     for i in range(start_index, N_samples):
         current_window_signal = data.iloc[i - window_size + 1 : i + 1][feature_cols]
-        past_window_signal = data.iloc[i - window_size + 1 - M : i + 1 - M][
-            feature_cols
-        ]
+        past_window_signal = data.iloc[i - window_size + 1 - M : i + 1 - M][feature_cols]
 
         feature_vector = []
 
@@ -95,9 +93,7 @@ def load_data_from_directory(data_dir, channels, label_map):
             required_cols = channel_cols + ["Label"]
 
             if not all(col in df.columns for col in required_cols):
-                print(
-                    f"警告: {file_path} に必要なカラムが見つかりませんでした。スキップします。"
-                )
+                print(f"警告: {file_path} に必要なカラムが見つかりませんでした。スキップします。")
                 continue
 
             df_selected = df[required_cols].copy()
@@ -138,9 +134,7 @@ def predict_parallel(score_rad, score_uln, rest_label=LABEL_MAP["rest"]):
     is_radial = (score_rad > THRESHOLD) & (score_rad > score_uln)
 
     # 尺屈と予測する条件
-    is_ulnar = (score_uln > THRESHOLD) & (
-        score_uln >= score_rad
-    )  # >= はスコアが等しい場合に尺屈を優先 (任意)
+    is_ulnar = (score_uln > THRESHOLD) & (score_uln >= score_rad)  # >= はスコアが等しい場合に尺屈を優先 (任意)
 
     # ラベルを更新
     y_pred[is_radial] = LABEL_MAP["radial_dev"]
@@ -170,9 +164,7 @@ def train_model():
     print(f"生成された特徴量 ({len(feature_names)}次元): {', '.join(feature_names)}")
 
     # 2. 学習/テストデータ分割
-    X_train_full, X_test_full, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
+    X_train_full, X_test_full, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
     print(f"\n学習データ数: {len(X_train_full)}, テストデータ数: {len(X_test_full)}")
 
     # 3. データの準備とモデルの学習
@@ -181,9 +173,7 @@ def train_model():
     print("\n--- Radial Dev (CH2, CH3) モデル学習開始 ---")
 
     # Radial Dev に必要な特徴量カラムを選択
-    rad_features = [
-        name for name in feature_names if any(f"CH{c}" in name for c in RADIAL_CHANNELS)
-    ]
+    rad_features = [name for name in feature_names if any(f"CH{c}" in name for c in RADIAL_CHANNELS)]
 
     # X_train_fullからRadial特徴量のみを抽出
     df_train_full = pd.DataFrame(X_train_full, columns=feature_names)
@@ -197,9 +187,7 @@ def train_model():
     X_rad_train = scaler_rad.fit_transform(X_rad_train_raw)
 
     # モデル学習
-    svm_rad = SVC(
-        kernel="rbf", C=SVM_C, gamma=SVM_GAMMA, random_state=42, probability=False
-    )  # decision_functionを使用するためprobability=False
+    svm_rad = SVC(kernel="rbf", C=SVM_C, gamma=SVM_GAMMA, random_state=42, probability=False)  # decision_functionを使用するためprobability=False
     svm_rad.fit(X_rad_train, y_rad_train)
 
     joblib.dump(svm_rad, MODEL_FILE_RADIAL)
@@ -210,9 +198,7 @@ def train_model():
     print("\n--- Ulnar Dev (CH6, CH7) モデル学習開始 ---")
 
     # Ulnar Dev に必要な特徴量カラムを選択
-    uln_features = [
-        name for name in feature_names if any(f"CH{c}" in name for c in ULNAR_CHANNELS)
-    ]
+    uln_features = [name for name in feature_names if any(f"CH{c}" in name for c in ULNAR_CHANNELS)]
 
     # X_train_fullからUlnar特徴量のみを抽出
     X_uln_train_raw = df_train_full[uln_features].values
@@ -225,9 +211,7 @@ def train_model():
     X_uln_train = scaler_uln.fit_transform(X_uln_train_raw)
 
     # モデル学習
-    svm_uln = SVC(
-        kernel="rbf", C=SVM_C, gamma=SVM_GAMMA, random_state=42, probability=False
-    )
+    svm_uln = SVC(kernel="rbf", C=SVM_C, gamma=SVM_GAMMA, random_state=42, probability=False)
     svm_uln.fit(X_uln_train, y_uln_train)
 
     joblib.dump(svm_uln, MODEL_FILE_ULNAR)
@@ -256,11 +240,7 @@ def train_model():
     # 評価レポート
     print("\n--- Classification Report (並列分類器統合結果) ---")
     target_names = [REVERSE_LABEL_MAP[val] for val in sorted(REVERSE_LABEL_MAP.keys())]
-    print(
-        classification_report(
-            y_test, y_pred_combined, target_names=target_names, zero_division=0
-        )
-    )
+    print(classification_report(y_test, y_pred_combined, target_names=target_names, zero_division=0))
 
     print("\n--- 完了: 2つのモデルとスケーラーが保存されました ---")
 

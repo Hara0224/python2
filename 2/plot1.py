@@ -24,9 +24,7 @@ try:
     scaler = joblib.load(SCALER_PATH)
     svm = joblib.load(MODEL_PATH)
 except FileNotFoundError:
-    print(
-        f"❌ モデル ({MODEL_PATH}) またはスケーラー ({SCALER_PATH}) ファイルが見つかりません。パスを確認してください。"
-    )
+    print(f"❌ モデル ({MODEL_PATH}) またはスケーラー ({SCALER_PATH}) ファイルが見つかりません。パスを確認してください。")
     exit()
 
 # 特徴量データセットのロード
@@ -53,9 +51,7 @@ X_scaled = scaler.transform(X_all)
 # PCAの初期化と実行（8次元 -> 2次元へ圧縮）
 pca = PCA(n_components=2)
 X_pca = pca.fit_transform(X_scaled)
-print(
-    f"✅ PCA実行完了。寄与率: {np.sum(pca.explained_variance_ratio_):.4f}"
-)  # 寄与率を確認
+print(f"✅ PCA実行完了。寄与率: {np.sum(pca.explained_variance_ratio_):.4f}")  # 寄与率を確認
 
 
 # === 3. 決定境界のプロット ===
@@ -94,18 +90,14 @@ cmap = plt.cm.get_cmap("RdYlBu", len(label_names))  # クラス数に応じた�
 plt.contourf(xx, yy, Z_mesh, alpha=0.7, cmap=cmap)
 
 # 元のデータ点をプロット
-scatter = plt.scatter(
-    X_pca[:, 0], X_pca[:, 1], c=y_numeric, cmap=cmap, s=20, edgecolors="k"
-)
+scatter = plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y_numeric, cmap=cmap, s=20, edgecolors="k")
 
 # カラーバーと凡例の設定
 cbar = plt.colorbar(scatter, ticks=np.arange(len(label_names)), label="Class")
 cbar.ax.set_yticklabels(label_names)
 
 # タイトルとラベル
-plt.title(
-    f"SVM RBF Kernel 決定境界 (PCA 2D)\nPCA寄与率: {np.sum(pca.explained_variance_ratio_):.4f}"
-)
+plt.title(f"SVM RBF Kernel 決定境界 (PCA 2D)\nPCA寄与率: {np.sum(pca.explained_variance_ratio_):.4f}")
 plt.xlabel("PCA Component 1")
 plt.ylabel("PCA Component 2")
 plt.grid(True, linestyle="--", alpha=0.6)

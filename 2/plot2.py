@@ -23,9 +23,7 @@ try:
     scaler = joblib.load(SCALER_SAVE_PATH)
     svm = joblib.load(MODEL_SAVE_PATH)
 except FileNotFoundError as e:
-    print(
-        f"❌ 必要なファイルが見つかりません。学習コードを実行してファイルを生成してください: {e}"
-    )
+    print(f"❌ 必要なファイルが見つかりません。学習コードを実行してファイルを生成してください: {e}")
     exit()
 
 # ラベルを数値にエンコード
@@ -41,9 +39,7 @@ X_scaled = scaler.transform(X_all)
 # === 2. グラフ化関数 ===
 
 
-def plot_pca_decision_boundary(
-    X_scaled, y_numeric, svm, scaler, pca, label_names, title_suffix=""
-):
+def plot_pca_decision_boundary(X_scaled, y_numeric, svm, scaler, pca, label_names, title_suffix=""):
     """PCA 2D空間におけるデータ分布とSVMの決定境界をプロットする"""
     print("--- 2-1. PCAと決定境界の計算開始 ---")
 
@@ -56,9 +52,7 @@ def plot_pca_decision_boundary(
     # グリッド生成
     x_min, x_max = X_pca[:, 0].min() - 0.5, X_pca[:, 0].max() + 0.5
     y_min, y_max = X_pca[:, 1].min() - 0.5, X_pca[:, 1].max() + 0.5
-    xx, yy = np.meshgrid(
-        np.arange(x_min, x_max, STEP_SIZE), np.arange(y_min, y_max, STEP_SIZE)
-    )
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, STEP_SIZE), np.arange(y_min, y_max, STEP_SIZE))
 
     # 決定境界の予測
     grid_points_2d = np.c_[xx.ravel(), yy.ravel()]
@@ -103,9 +97,7 @@ def plot_pca_decision_boundary(
     cbar = plt.colorbar(scatter, ticks=np.arange(len(label_names)), label="Class")
     cbar.ax.set_yticklabels(label_names)
 
-    plt.title(
-        f"SVM 決定境界 (PCA 2D) {title_suffix}\nPCA寄与率: {explained_variance:.4f}"
-    )
+    plt.title(f"SVM 決定境界 (PCA 2D) {title_suffix}\nPCA寄与率: {explained_variance:.4f}")
     plt.xlabel("PCA Component 1")
     plt.ylabel("PCA Component 2")
     plt.grid(True, linestyle="--", alpha=0.6)
@@ -145,9 +137,7 @@ def plot_confusion_matrix_and_report(y_test, y_pred, label_names, title):
 def plot_main():
     # A. 決定境界のプロット
     # モデルの学習にはテストデータが必要なため、ダミーのPCAオブジェクトを使用
-    plot_pca_decision_boundary(
-        X_scaled, y_numeric, svm, scaler, PCA(n_components=2), label_names, "(全データ)"
-    )
+    plot_pca_decision_boundary(X_scaled, y_numeric, svm, scaler, PCA(n_components=2), label_names, "(全データ)")
 
     # B. 混同行列のプロットには、テスト結果のデータが必要
     # 学習コードからテストデータと予測結果を再生成する必要がある
@@ -159,9 +149,7 @@ def plot_main():
     y = df_features["Label"].values
     weights = df_features["SampleWeight"].values
 
-    X_train, X_test, y_train, y_test, _, _ = train_test_split(
-        X, y, weights, test_size=0.2, random_state=42, stratify=y
-    )
+    X_train, X_test, y_train, y_test, _, _ = train_test_split(X, y, weights, test_size=0.2, random_state=42, stratify=y)
 
     # スケーリング
     X_test_scaled = scaler.transform(X_test)
@@ -170,9 +158,7 @@ def plot_main():
     y_pred = svm.predict(X_test_scaled)
 
     # 混同行列のプロット
-    plot_confusion_matrix_and_report(
-        y_test, y_pred, label_names, "SVM Onset Model (テストデータ)"
-    )
+    plot_confusion_matrix_and_report(y_test, y_pred, label_names, "SVM Onset Model (テストデータ)")
 
 
 if __name__ == "__main__":
