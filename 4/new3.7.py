@@ -13,12 +13,12 @@ ser_motor = serial.Serial(SERIAL_MOTOR, BAUDRATE, timeout=0.1)
 
 # ===== EMGパラメータ =====
 FS = 200.0
-RMS_WIN_MS = 100
-RMS_WIN = max(4, int(FS * RMS_WIN_MS / 1000.0))
+RMS_WIN_MS = 80
+RMS_WIN = max(5, int(FS * RMS_WIN_MS / 1000.0))
 EMA_ALPHA = 0.2
 K_SIGMA = 5.6
 REFRACTORY_MS = 200
-PEAK_WIN_MS = 100
+
 CALIB_DURATION = 3.0
 
 
@@ -29,13 +29,9 @@ mean = np.zeros(8)
 std = np.ones(8)
 last_trigger_time = 0
 trigger_time = None
-trigger_ch = None
 direction = None
 last_direction = None
-peak_val = -np.inf
-peak_time = None
 arrival_queue = deque(maxlen=RMS_WIN)
-arrival_at_trigger = None
 up_ch = [1, 2]
 down_ch = [5, 6]
 calibration_done = False
@@ -85,8 +81,8 @@ def send_motor_command(direction):
 def on_emg(emg, movement):
     global calibration_done, expected_direction
     global ema_val, mean, std
-    global last_trigger_time, trigger_time, trigger_ch, direction, last_direction
-    global peak_val, peak_time, arrival_queue, arrival_at_trigger
+    global last_trigger_time, direction, last_direction
+    global arrival_queue
 
     if emg is None:
         return
@@ -106,38 +102,23 @@ def on_emg(emg, movement):
 
     z_scores = (ema_val - mean) / (std + 1e-6)
 
-    if trigger_time is None:
-        if t_arrival - last_trigger_time > REFRACTORY_MS / 1000.0:
-            for ch in up_ch + down_ch:
-                if z_scores[ch] > K_SIGMA:
-                    new_direction = "UP" if ch in up_ch else "DOWN"
-                    if last_direction is None and new_direction != "UP":
-                        continue
-                    if new_direction != expected_direction:
-                        continue
-                    trigger_time = time.time()
-                    trigger_ch = ch
-                    direction = new_direction
-                    peak_val = z_scores[ch]
-                    peak_time = trigger_time
-                    arrival_at_trigger = arrival_queue[0] if len(arrival_queue) > 0 else t_arrival
-                    last_trigger_time = trigger_time
-                    print(f"[TRIGGER] ch={ch} dir={direction} z={z_scores[ch]:.2f}")
-                    break
-    else:
-        if z_scores[trigger_ch] > peak_val:
-            peak_val = z_scores[trigger_ch]
-            peak_time = t_arrival
-        if (t_arrival - trigger_time) * 1000.0 > PEAK_WIN_MS:
-            send_motor_command(direction)
-            last_direction = direction
-            expected_direction = "DOWN" if direction == "UP" else "UP"
-            trigger_time = None
-            trigger_ch = None
-            direction = None
-            peak_val = -np.inf
-            peak_time = None
-            arrival_at_trigger = None
+    if t_arrival - last_trigger_time > REFRACTORY_MS / 1000.0:
+        for ch in up_ch + down_ch:
+            if z_scores[ch] > K_SIGMA:
+                new_direction = "UP" if ch in up_ch else "DOWN"
+                if last_direction is None and new_direction != "UP":
+                    continue
+                if new_direction != expected_direction:
+                    continue
+
+                # 即時実行
+                send_motor_command(new_direction)
+                print(f"[TRIGGER] ch={ch} dir={new_direction} z={z_scores[ch]:.2f}")
+
+                last_trigger_time = t_arrival
+                last_direction = new_direction
+                expected_direction = "DOWN" if new_direction == "UP" else "UP"
+                break
 
 
 # ===== Myo初期化 =====
