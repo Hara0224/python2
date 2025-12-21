@@ -31,7 +31,7 @@ def calculate_symmetric_angle(ax, ay, bx, by, cx, cy):
 
 
 # === フォルダ内の画像パスを取得 ===
-input_folder = r"C:\Users\AZUKI\Desktop\python\EMG2\20250813\img_data_proc1\1_20250812_154824"  # ←画像フォルダに変更
+input_folder = r"C:\Users\hrsyn\Desktop\DATAforPython\20250729\img_data_raw22\1_20250729_130913"  # ←画像フォルダに変更
 image_paths = sorted(glob(os.path.join(input_folder, "*.jpg")))
 output_image_folder = os.path.join(input_folder, "annotated")  # フォルダ名：annotated
 os.makedirs(output_image_folder, exist_ok=True)

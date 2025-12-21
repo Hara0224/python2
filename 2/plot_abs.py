@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import glob
 import os
 
-input_folder = r"C:\Users\AZUKI\Desktop\python\EMG\emg_data3"  # 整流化されたCSVが入っているフォルダ
+input_folder = r"C:\Users\hrsyn\Desktop\DATAforPython\20250729\emg_data_raw11"  # 整流化されたCSVが入っているフォルダ
 
 csv_files = glob.glob(os.path.join(input_folder, "*.csv"))
 

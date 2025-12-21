@@ -18,7 +18,7 @@ def calculate_angle(x1, y1, x2, y2):
 
 
 # 入力画像のパス（★差し替えてください）
-image_path = r"C:\Users\AZUKI\Desktop\python\EMG2\img_data_raw5\2up_20250721_112133\0941.jpg"
+image_path = r"C:\Users\hrsyn\Desktop\DATAforPython\20250729\img_data_raw11\1_20250729_123655\0842.jpg"
 image = cv2.imread(image_path)
 image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 results = hands.process(image_rgb)

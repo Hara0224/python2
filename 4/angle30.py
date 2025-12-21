@@ -13,7 +13,7 @@ def calculate_angle_from_line(x1, y1, x2, y2):
 
 
 # 対象フォルダのパス（必要に応じて変更）
-folder_path = r"C:\Users\AZUKI\Desktop\python\EMG2\img_data_high\2up_20250721_113005"
+folder_path = r"C:\Users\hrsyn\Desktop\DATAforPython\20250729\img_data_raw11\1_20250729_123655"
 output_folder = os.path.join(folder_path, "results")
 os.makedirs(output_folder, exist_ok=True)
 

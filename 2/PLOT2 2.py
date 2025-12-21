@@ -8,8 +8,8 @@ import os
 # ===== 判定ロジックの定数 (MyoControllerクラスから抽出) =====
 # =========================================================
 
-CSV_PATH = r"C:\Users\hrsyn\Desktop\Python\emg_data3\emg_rms1.csv"  # RMSデータファイル名
-CALIB_DURATION = 3.0  # キャリブレーション秒数
+CSV_PATH = r"C:\Users\hrsyn\Desktop\DATAforPython\20250729\emg_data_raw11\emgraw_1_20250729_123655.csv"  # RMSデータファイル名
+CALIB_DURATION = 0.5  # キャリブレーション秒数
 FS = 200.0  # サンプリング周波数 (Hz)
 
 # 判定に必要な主要パラメータ
