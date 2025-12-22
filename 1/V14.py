@@ -20,19 +20,23 @@ FS = 200.0
 
 # ユーザー指定: RMS Windowsize = 50
 # Myoは200Hzなので、50サンプル = 0.25秒(250ms)の移動平均となります
-RMS_WIN = 25
+RMS_WIN =25
 
 # EMA係数 (RMSが既に平滑化されているため、EMAは補助的に使用)
 EMA_ALPHA = 0.5 
 
 # ===== 計測・判定パラメータ =====
-MEASURE_DURATION_MS = 40  # トリガー後にデータを計測する期間
+MEASURE_DURATION_MS = 50  # トリガー後にデータを計測する期間
 COOLDOWN_MS = 150         # 判定後の不感帯
 
 # --- 閾値設定 (RMS値ベース) ---
 # 1. 動作開始トリガー (RMS値がこれを超えたら計測開始)
-#    安静時のノイズレベルに合わせて調整してください（例: 5〜10など）
-TRIGGER_RMS = 25
+#    キャリブレーションで決定するため、初期値は仮置き
+# TRIGGER_RMS = 25  # (削除: 個別閾値 trigger_thresholds を使用)
+
+# キャリブレーション用定数
+K_SIGMA = 5.4  # ノイズフロアの標準偏差の何倍を閾値とするか
+
 
 # 2. 強弱判定の閾値 (RMS値)
 #    グラフでの分析結果「50」を設定
@@ -58,6 +62,10 @@ measure_start_time = 0
 cooldown_start_time = 0
 measure_buffer = []  # 計測値を貯めるリスト
 
+# チャンネルごとのトリガー閾値 (初期値は安全のため高めに設定)
+trigger_thresholds = np.zeros(8) + 999.0 
+
+
 # チャンネル設定
 up_ch = [1, 2]      # 上げる動作
 down_ch = [5, 6]    # 叩く動作
@@ -75,6 +83,8 @@ def calibrate(duration=3.0):
     print("\n=== キャリブレーション開始: 3秒間リラックスしてください ===")
     time.sleep(duration) 
     
+    global trigger_thresholds
+    
     # RMSのバックグラウンドノイズレベルを確認（参考用）
     print("... データ収集中 ...")
     samples = []
@@ -83,13 +93,22 @@ def calibrate(duration=3.0):
         time.sleep(0.01)
     
     samples = np.array(samples)
-    noise_avg = np.mean(samples, axis=0)
+    
+    # チャンネルごとの平均と標準偏差を計算
+    noise_mean = np.mean(samples, axis=0)
+    noise_std = np.std(samples, axis=0)
+    
+    # 閾値を決定: Mean + K_SIGMA * Std
+    trigger_thresholds = noise_mean + K_SIGMA * noise_std
     
     calibration_done = True
     print(f"=== 完了 ===")
-    print(f"Noise Level (RMS): {noise_avg[down_ch]}")
-    print(f"Trigger Threshold (RMS): > {TRIGGER_RMS}")
+    print(f"Noise Mean: {np.round(noise_mean, 2)}")
+    print(f"Noise Std : {np.round(noise_std, 2)}")
+    print(f"Calculated Thresholds (Mean + {K_SIGMA}sigma):")
+    print(np.round(trigger_thresholds, 2))
     print(f"Strong Threshold (RMS):  > {STRONG_THRESHOLD_RMS}")
+
 
 
 # ===== EMGハンドラ (メインロジック) =====
@@ -118,9 +137,23 @@ def on_emg(emg, movement):
 
     # 3. ステートマシンによる制御
     if current_state == STATE_IDLE:
-        # トリガー判定 (RMS値を使用)
+        # トリガー判定 (チャンネルごとの閾値を使用)
+        # down_chのいずれかが閾値を超え、かつ up_chのすべてが閾値を下回っている場合
+        
+        is_down_triggered = False
+        for ch in down_ch:
+            if current_rms_values[ch] > trigger_thresholds[ch]:
+                is_down_triggered = True
+                break
+        
+        is_up_quiet = True
+        for ch in up_ch:
+            if current_rms_values[ch] > trigger_thresholds[ch]:
+                is_up_quiet = False
+                break
+
         # 上げる筋肉が反応していない(誤検知防止) かつ 叩く筋肉がトリガーを超えたら開始
-        if down_intensity_rms > TRIGGER_RMS and up_intensity_rms < TRIGGER_RMS:
+        if is_down_triggered and is_up_quiet:
             current_state = STATE_MEASURING
             measure_start_time = now
             measure_buffer = [] 
@@ -144,6 +177,7 @@ def on_emg(emg, movement):
                 else:
                     final_output = OUT_WEAK
                     print(f"[ACTION] WEAK   (RMS: {avg_rms_val:.1f})")
+
                 
                 if ser_motor and ser_motor.is_open:
                     ser_motor.write(bytes([final_output]))
@@ -153,8 +187,14 @@ def on_emg(emg, movement):
 
     elif current_state == STATE_COOLDOWN:
         if (now - cooldown_start_time) * 1000 >= COOLDOWN_MS:
-            # 値が落ち着くまで戻らない
-            if down_intensity_rms < TRIGGER_RMS: 
+            # 値が落ち着くまで戻らない (すべてのdown_chが閾値を下回るまで)
+            all_down_quiet = True
+            for ch in down_ch:
+                if current_rms_values[ch] > trigger_thresholds[ch]:
+                    all_down_quiet = False
+                    break
+            
+            if all_down_quiet: 
                 current_state = STATE_IDLE
 
 # ===== メイン処理 =====
@@ -175,17 +215,27 @@ def main():
     t = threading.Thread(target=worker, daemon=True)
     t.start()
     
-    calibrate()
-    
-    print(f"\n=== ドラム制御: RMS閾値判定モード (Window=50, Thr={STRONG_THRESHOLD_RMS}) ===")
-    print("Ctrl+C で終了")
-    
     try:
+        calibrate()
+        
+        print(f"\n=== ドラム制御: RMS閾値判定モード (Window={RMS_WIN}, Thr={STRONG_THRESHOLD_RMS}) ===")
+        print("Ctrl+C で終了")
+        
         while True:
             time.sleep(0.1)
+            
     except KeyboardInterrupt:
-        m.disconnect()
-        if ser_motor: ser_motor.close()
+        print("\nCtrl+C detected. Exiting...")
+    finally:
+        try:
+            m.disconnect()
+        except: pass
+        
+        if ser_motor and ser_motor.is_open:
+            try:
+                ser_motor.close()
+            except: pass
+        print("Disconnected.")
 
 if __name__ == "__main__":
     main()
