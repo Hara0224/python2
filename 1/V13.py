@@ -16,7 +16,7 @@ MODEL_PATH = "svm_hybrid_v12_delta.joblib"
 SCALER_PATH = "scaler_hybrid_v12_delta.joblib"
 CHANNELS = [2, 3, 6, 7]
 FS = 200
-STEP_MS = 5
+STEP_MS = 25
 WINDOW_MS = 50
 WINDOW_SAMPLES = int(FS * WINDOW_MS / 1000)
 STEP_SAMPLES = int(FS * STEP_MS / 1000)
@@ -27,7 +27,7 @@ ULNAR_INDICES = [2, 3]
 # --- Arduino通信設定 ---
 # 注意: Arduinoが接続されているポート番号に合わせて変更してください (例: 'COM3', '/dev/ttyUSB0')
 SERIAL_PORT = 'COM4'
-BAUD_RATE = 9600
+BAUD_RATE = 115200
 SERIAL_TIMEOUT = 1
 
 # === 2. グローバル変数と初期化 ===

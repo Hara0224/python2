@@ -1,48 +1,26 @@
 import time
-import csv
+
 import numpy as np
 from collections import deque
 from pyomyo import Myo, emg_mode
 import serial
 
 # ===== Arduino設定 =====
-SERIAL_MOTOR = "COM5"  # モータ制御Arduino
-SERIAL_SENSOR = "COM4"  # センサ検知Arduino
+#SERIAL_MOTOR = "COM4"  # モータ制御Arduino
 BAUDRATE = 115200
 
-ser_motor = serial.Serial(SERIAL_MOTOR, BAUDRATE, timeout=0.1)
-ser_sensor = serial.Serial(SERIAL_SENSOR, BAUDRATE, timeout=0.1)
+#ser_motor = serial.Serial(SERIAL_MOTOR, BAUDRATE, timeout=0.1)
 
 # ===== EMGパラメータ =====
 FS = 200.0
-RMS_WIN_MS = 100
-RMS_WIN = max(4, int(FS * RMS_WIN_MS / 1000.0))
+RMS_WIN_MS = 80
+RMS_WIN = max(5, int(FS * RMS_WIN_MS / 1000.0))
 EMA_ALPHA = 0.2
 K_SIGMA = 5.6
 REFRACTORY_MS = 200
-PEAK_WIN_MS = 100
+
 CALIB_DURATION = 3.0
 
-# ===== CSV保存 =====
-CSV_PATH = "acc_delay_log1.csv"
-RAW_CSV_PATH = "emg_raw1.csv"
-RMS_CSV_PATH = "emg_rms1.csv"
-EMA_CSV_PATH = "emg_ema1.csv"
-
-csv_file = open(CSV_PATH, "w", newline="")
-raw_csv_file = open(RAW_CSV_PATH, "w", newline="")
-rms_csv_file = open(RMS_CSV_PATH, "w", newline="")
-ema_csv_file = open(EMA_CSV_PATH, "w", newline="")
-
-csv_writer = csv.writer(csv_file)
-raw_csv_writer = csv.writer(raw_csv_file)
-rms_csv_writer = csv.writer(rms_csv_file)
-ema_csv_writer = csv.writer(ema_csv_file)
-
-csv_writer.writerow(["sensor1_time", "sensor2_time", "total_delay_ms"])
-raw_csv_writer.writerow(["Timestamp"] + [f"CH{i+1}" for i in range(8)])
-rms_csv_writer.writerow(["Timestamp"] + [f"CH{i+1}" for i in range(8)])
-ema_csv_writer.writerow(["Timestamp"] + [f"CH{i+1}" for i in range(8)])
 
 # ===== 状態管理 =====
 rms_buf = [deque(maxlen=RMS_WIN) for _ in range(8)]
@@ -51,13 +29,9 @@ mean = np.zeros(8)
 std = np.ones(8)
 last_trigger_time = 0
 trigger_time = None
-trigger_ch = None
 direction = None
 last_direction = None
-peak_val = -np.inf
-peak_time = None
 arrival_queue = deque(maxlen=RMS_WIN)
-arrival_at_trigger = None
 up_ch = [1, 2]
 down_ch = [5, 6]
 calibration_done = False
@@ -103,63 +77,17 @@ def send_motor_command(direction):
         ser_motor.write(b"MOTOR-\n")
 
 
-# ===== センサ遅延測定 =====
-MAX_SENSOR_WAIT = 1.0
-
-
-def measure_sensor_delay():
-    acc1_delta = None
-    acc2_delta = None
-    start = time.time()
-    while time.time() - start < MAX_SENSOR_WAIT:
-        line_bytes = ser_sensor.readline()
-        if not line_bytes:
-            continue
-        # 文字化けは破棄（例外を投げない）
-        line = line_bytes.decode("utf-8", errors="ignore").strip()
-        if not line:
-            continue
-        try:
-            if line.startswith("ACC1:"):
-                parts = line.split(":")
-                if len(parts) >= 2:
-                    acc1_delta = int(parts[1])
-            elif line.startswith("ACC2:"):
-                parts = line.split(":")
-                if len(parts) >= 2:
-                    acc2_delta = int(parts[1])
-        except (ValueError, IndexError) as e:
-            # 数値変換失敗やフォーマット不正は読み飛ばし
-            print(f"[WARN] センサ行パース失敗: {e} line={line!r}")
-            continue
-
-        if acc1_delta is not None and acc2_delta is not None:
-            break
-
-    if acc1_delta is not None and acc2_delta is not None:
-        total_delay = abs(acc2_delta - acc1_delta)
-        print(f"[ACC_DELAY] {total_delay:.2f} ms")
-        csv_writer.writerow([acc1_delta, acc2_delta, total_delay])
-        csv_file.flush()
-    else:
-        print("[TIMEOUT] センサ反応が両方得られませんでした")
-
-
 # ===== EMGハンドラ =====
 def on_emg(emg, movement):
     global calibration_done, expected_direction
     global ema_val, mean, std
-    global last_trigger_time, trigger_time, trigger_ch, direction, last_direction
-    global peak_val, peak_time, arrival_queue, arrival_at_trigger
+    global last_trigger_time, direction, last_direction
+    global arrival_queue
 
     if emg is None:
         return
     t_arrival = time.time()
     arrival_queue.append(t_arrival)
-
-    # RAW保存
-    raw_csv_writer.writerow([t_arrival] + list(emg))
-    raw_csv_file.flush()
 
     # RMS + EMA
     rms_vals = []
@@ -168,51 +96,29 @@ def on_emg(emg, movement):
         rms = compute_rms(rms_buf[ch])
         rms_vals.append(rms)
         ema_val[ch] = EMA_ALPHA * rms + (1 - EMA_ALPHA) * ema_val[ch]
-    rms_csv_writer.writerow([t_arrival] + list(rms_vals))
-    rms_csv_file.flush()
-    ema_csv_writer.writerow([t_arrival] + list(ema_val))
-    ema_csv_file.flush()
 
     if not calibration_done:
         return
 
     z_scores = (ema_val - mean) / (std + 1e-6)
 
-    if trigger_time is None:
-        if t_arrival - last_trigger_time > REFRACTORY_MS / 1000.0:
-            for ch in up_ch + down_ch:
-                if z_scores[ch] > K_SIGMA:
-                    new_direction = "UP" if ch in up_ch else "DOWN"
-                    if last_direction is None and new_direction != "UP":
-                        continue
-                    if new_direction != expected_direction:
-                        continue
-                    trigger_time = time.time()
-                    trigger_ch = ch
-                    direction = new_direction
-                    peak_val = z_scores[ch]
-                    peak_time = trigger_time
-                    arrival_at_trigger = (
-                        arrival_queue[0] if len(arrival_queue) > 0 else t_arrival
-                    )
-                    last_trigger_time = trigger_time
-                    print(f"[TRIGGER] ch={ch} dir={direction} z={z_scores[ch]:.2f}")
-                    break
-    else:
-        if z_scores[trigger_ch] > peak_val:
-            peak_val = z_scores[trigger_ch]
-            peak_time = t_arrival
-        if (t_arrival - trigger_time) * 1000.0 > PEAK_WIN_MS:
-            send_motor_command(direction)
-            measure_sensor_delay()
-            last_direction = direction
-            expected_direction = "DOWN" if direction == "UP" else "UP"
-            trigger_time = None
-            trigger_ch = None
-            direction = None
-            peak_val = -np.inf
-            peak_time = None
-            arrival_at_trigger = None
+    if t_arrival - last_trigger_time > REFRACTORY_MS / 1000.0:
+        for ch in up_ch + down_ch:
+            if z_scores[ch] > K_SIGMA:
+                new_direction = "UP" if ch in up_ch else "DOWN"
+                if last_direction is None and new_direction != "UP":
+                    continue
+                if new_direction != expected_direction:
+                    continue
+
+                # 即時実行
+                send_motor_command(new_direction)
+                print(f"[TRIGGER] ch={ch} dir={new_direction} z={z_scores[ch]:.2f}")
+
+                last_trigger_time = t_arrival
+                last_direction = new_direction
+                expected_direction = "DOWN" if new_direction == "UP" else "UP"
+                break
 
 
 # ===== Myo初期化 =====
@@ -234,19 +140,8 @@ finally:
     print("[INFO] リソースを閉じています...")
 
     # ファイルを確実に閉じる（bare except禁止）
-    for f, name in [
-        (csv_file, "csv_file"),
-        (raw_csv_file, "raw_csv_file"),
-        (rms_csv_file, "rms_csv_file"),
-        (ema_csv_file, "ema_csv_file"),
-    ]:
-        try:
-            f.close()
-        except Exception as e:
-            print(f"[WARN] {name} を閉じる際にエラー: {e}")
-
     # シリアルを確実に閉じる
-    for s, name in [(ser_motor, "ser_motor"), (ser_sensor, "ser_sensor")]:
+    for s, name in [(ser_motor, "ser_motor")]:
         try:
             s.close()
         except Exception as e:

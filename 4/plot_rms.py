@@ -2,8 +2,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import glob
 import os
+import numpy as np
 
-input_folder = r"C:\Users\hrsyn\Desktop\masterPY\emg_data_12"  # 整流化されたCSVが入っているフォルダ
+input_folder = r"C:\Users\hrsyn\Desktop\masterPY\emg_data_13"  # 整流化されたCSVが入っているフォルダ
+window_size = 50  # RMSのウィンドウサイズ
 
 csv_files = glob.glob(os.path.join(input_folder, "*.csv"))
 
@@ -19,15 +21,18 @@ for file_path in csv_files:
     # グラフ描画
     plt.figure(figsize=(10, 5 * len(selected_channels)))
     for idx, ch in enumerate(selected_channels, start=1):
+        # RMS計算 (Rolling Root Mean Square)
+        rms = (df[f"CH{ch}"] ** 2).rolling(window=window_size).mean() ** 0.5
+        
         plt.subplot(len(selected_channels), 1, idx)
-        plt.plot(time, df[f"CH{ch}"], label=f"CH{ch}")
+        plt.plot(time, rms, label=f"CH{ch} (RMS)")
         plt.title(f"Channel {ch}", fontsize=20)
-        plt.ylabel("Amplitude")
-        plt.ylim(-150, 150)
+        plt.ylabel("Amplitude (RMS)")
+        plt.ylim(0, 150)
         plt.grid(True)
         plt.legend()
 
-    plt.suptitle(file_name, fontsize=18, y=0.96)
+    plt.suptitle(f"{file_name} (RMS window={window_size})", fontsize=18, y=0.96)
     plt.xlabel("Time (s)", y=0.05)
     plt.subplots_adjust(hspace=0.6, top=0.9, bottom=0.05)
 

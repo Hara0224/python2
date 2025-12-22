@@ -7,11 +7,11 @@ import multiprocessing  # データの取得と処理を分離
 import queue  # プロセス間でデータを安全に受け渡す
 
 # === 設定 ===
-labels = ["radial_dev", "ulnar_dev", "rest"]
+labels = ["big", "small"]
 repeats_per_label = 6
-record_duration = 2.0  # 1回あたりの記録時間（秒）
+record_duration = 1.5  # 1回あたりの記録時間（秒）
 interval_between = 1.0  # 各収録間の休憩（秒）
-save_dir = "./emg_data_multiprocess/"  # 保存先ディレクトリを更新
+save_dir = "./emg_data_13/"  # 保存先ディレクトリを更新
 
 # 保存先フォルダがなければ作成
 os.makedirs(save_dir, exist_ok=True)
@@ -27,7 +27,7 @@ def myo_worker(q):
     print("[INFO] Myo Workerプロセス開始...")
 
     # Myo初期化。動作実績のある RAW モードを使用
-    m = Myo(mode=emg_mode.FILTERED)
+    m = Myo(mode=emg_mode.RAW)
 
     try:
         # 接続を試みる

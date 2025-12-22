@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 import glob
+import japanize_matplotlib
 import os
 
 import sys
