@@ -26,15 +26,16 @@ try:
 except:
     ser_sensor = None
 
-# ===== 制御パラメータ (変更なし) =====
+# ===== 制御パラメータ =====
 UP_CH = [1, 2]
 DOWN_CH = [5, 6]
 MEASURE_DURATION_MS = 60
 COOLDOWN_MS = 150
-RISE_SENSITIVITY = 6.0
+# ★調整済みパラメータ
+RISE_SENSITIVITY = 4.0  # 6.0 -> 4.0 に下げて感度アップ
 UP_HOLD_SENSITIVITY = 5.0
 STRONG_RATIO = 1.2
-EMA_ALPHA = 0.2
+EMA_ALPHA = 0.3  # 0.2 -> 0.3 に上げて反応速度アップ
 CALIB_DURATION = 3.0
 
 # ===== グローバル変数 =====
@@ -213,6 +214,13 @@ def on_emg(emg, movement):
             print(f">> ATTACK! (Slope: {max_down_slope:.2f})")
             return
 
+        # ★デバッグ用: 攻撃用の変化量が閾値に対してどうなっているか見る
+        if max_down_slope > 1.0:  # 少しでも反応があったら表示
+            # どのチャンネルが反応しているか知りたいので詳細表示
+            ch_idx = np.argmax(down_slope_list)
+            target_ch = DOWN_CH[ch_idx]
+            print(f"[DEBUG] Slope:{max_down_slope:.2f} / Thr:{rise_thresholds[target_ch]:.2f} (ch{target_ch+1})")
+
         is_up_active = up_level > np.mean(level_thresholds[UP_CH])
         if is_up_active and not is_holding_up:
             send_cmd("L")
@@ -270,7 +278,7 @@ def main():
 
     calibrate()
 
-    print("\n==== 立ち上がり検出モード ====")
+    print("\n==== 立ち上がり検出モード (V19) ====")
     try:
         while True:
             time.sleep(0.1)
