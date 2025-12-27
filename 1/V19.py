@@ -271,8 +271,15 @@ def main():
     m.vibrate(1)
     send_cmd("R")
 
+    import os
+
     # 3. ★ロギングスレッドの開始
-    filename = datetime.datetime.now().strftime("emg_data_%Y%m%d_%H%M%S.csv")
+    # フォルダ1に保存するように指定
+    save_dir = r"c:\Users\hrsyn\Desktop\gitPython\1"
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    filename = os.path.join(save_dir, datetime.datetime.now().strftime("emg_data_%Y%m%d_%H%M%S.csv"))
     t_logger = threading.Thread(target=logging_loop, args=(filename,), daemon=True)
     t_logger.start()
 
