@@ -6,10 +6,10 @@ from pyomyo import Myo, emg_mode
 import serial
 
 # ===== Arduino設定 =====
-#SERIAL_MOTOR = "COM4"  # モータ制御Arduino
+SERIAL_MOTOR = "COM4"  # モータ制御Arduino
 BAUDRATE = 115200
 
-#ser_motor = serial.Serial(SERIAL_MOTOR, BAUDRATE, timeout=0.1)
+ser_motor = serial.Serial(SERIAL_MOTOR, BAUDRATE, timeout=0.1)
 
 # ===== EMGパラメータ =====
 FS = 200.0

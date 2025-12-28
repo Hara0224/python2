@@ -1,71 +1,57 @@
-import socket
+import serial
+import csv
 import time
-import sys
 
-TEXIOHost = "172.16.5.133"
-TEXIOPort = 2268
+# --- 設定 ---
+COM_PORT = 'COM6'  # Arduinoのポート番号に合わせて変更してください
+BAUD_RATE = 115200 # ArduinoのSerial.beginと同じ速度
+OUTPUT_FILE = 'sensor_test.csv'
 
-TEXIO = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-
-def connect_texio():
-    """TEXIO電源装置に接続します。"""
+def save_and_print_data():
     try:
-        print(f"TEXIO ({TEXIOHost}:{TEXIOPort}) に接続を試みます...")
-        TEXIO.connect((TEXIOHost, TEXIOPort))
+        # Arduinoとの通信開始
+        ser = serial.Serial(COM_PORT, BAUD_RATE, timeout=1)
+        print(f"接続完了: {COM_PORT}")
+        print("Ctrl+C を押すと終了して保存します...")
+        print("-" * 40)
 
-        TEXIO.send(b"idn?\n")
-        response_texio = TEXIO.recv(4096)
-        print(f"TEXIO接続成功: {response_texio.decode().strip()}")
+        # CSVファイルを開いて準備
+        with open(OUTPUT_FILE, mode='w', newline='') as f:
+            writer = csv.writer(f)
+            # ヘッダー（項目の名前）を書き込み
+            header = ["Arduino_Micros", "Sensor1", "Sensor2"]
+            writer.writerow(header)
+            print(f"ヘッダー書き込み: {header}")
 
-        return True
-    except Exception as e:
-        print(f"TEXIOへの接続に失敗しました: {e}")
-        return False
+            # データを読み込み続けるループ
+            while True:
+                if ser.in_waiting > 0:
+                    try:
+                        # Arduinoから1行データを受け取る
+                        line = ser.readline().decode('utf-8').strip()
+                        
+                        if line:
+                            data = line.split(',')
+                            # データが3つ揃っているか確認（ノイズ対策）
+                            if len(data) == 3:
+                                # 1. ファイルに保存
+                                writer.writerow(data)
+                                
+                                # 2. 画面にも表示（これで動作確認できます）
+                                print(f"保存中: 時間={data[0]}, センサ1={data[1]}, センサ2={data[2]}")
+                                
+                    except ValueError:
+                        pass # 文字化けなどは無視
 
-
-def set_texio_voltage(voltage):
-    try:
-        command = f"SOUR:VOLT {voltage:.1f}\n".encode()
-        TEXIO.send(command)
-        print(f"{voltage:.1f} V に設定しました。")
-
-        TEXIO.send(b"OUTP ON\n")
-        print("TEXIOの出力をONにしました。")
-    except Exception as e:
-        print(f"TEXIOの電圧設定に失敗しました: {e}")
-
-
-def turn_off_texio_output():
-    try:
-        TEXIO.send(b"OUTP OFF\n")
-        print("TEXIOの出力を停止しました。")
-    except Exception as e:
-        print(f"TEXIO停止エラー: {e}")
-
-
-def close_texio_connection():
-    try:
-        TEXIO.close()
-        print("TEXIOとの接続を閉じました。")
-    except Exception as e:
-        print(f"ソケットクローズエラー: {e}")
-
+    except serial.SerialException:
+        print("エラー: ポートが見つかりません。Arduinoが接続されているか、ポート番号が正しいか確認してください。")
+    except KeyboardInterrupt:
+        print("\n終了します。")
+    finally:
+        if 'ser' in locals() and ser.is_open:
+            ser.close()
+            print("通信を閉じました。")
+            print(f"ファイル '{OUTPUT_FILE}' を確認してください。")
 
 if __name__ == "__main__":
-    if not connect_texio():
-        print("TEXIOに接続できなかったため、プログラムを終了します。")
-        sys.exit(1)
-
-    try:
-        print("\n--- 電圧設定テスト ---")
-        target_voltage_1 = 10.0
-        print(f"TEXIOの電圧を {target_voltage_1}V に設定します。")
-        set_texio_voltage(target_voltage_1)
-        time.sleep(5)
-
-    except KeyboardInterrupt:
-        print("\nプログラムがユーザーによって中断されました。")
-    finally:
-        turn_off_texio_output()
-        close_texio_connection()
+    save_and_print_data()
