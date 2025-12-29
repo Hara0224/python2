@@ -114,9 +114,10 @@ def main():
         # 軸を分ける
         ax2 = ax.twinx()
         vib_cols = ["vib1_z", "vib2_z"]
-        for col in vib_cols:
+        vib_colors = ["green", "purple"]
+        for i, col in enumerate(vib_cols):
             if col in df.columns:
-                ax2.plot(df["time_rel"], (df[col] - 470).abs(), label=f"Vib {col}", linestyle="-", linewidth=1.0, alpha=0.3, color="red") # 色を指定しないと自動サイクルで被る可能性があるため
+                ax2.plot(df["time_rel"], df[col] - 470, label=f"Vib {col}", linestyle="-", linewidth=1.2, alpha=0.5, color=vib_colors[i])
 
 
         # 状態 (state) - 背景色などで表現してもいいが、今回は単純なプロットか、値として表示
@@ -124,22 +125,61 @@ def main():
             # stateを見やすくするために少しスケールする等の工夫が可能だが、一旦そのまま
         #    ax.plot(df["time_rel"], df["state"] * 10, label="State (x10)", linestyle=":", color="black")
 
-        ax.set_title("V19 センサーデータ可視化", fontsize=20)
-        ax.set_xlabel("時間 (秒)", fontsize=16)
-        ax.set_ylabel("EMG (RMS)", fontsize=16)
-        ax2.set_ylabel("Vibration (Abs Diff)", fontsize=16)
+        ax.set_title("センサーデータ可視化", fontsize=25)
+        ax.set_xlabel("時間 (秒)", fontsize=20)
+        ax.set_ylabel("EMG (RMS)", fontsize=20)
+        ax2.set_ylabel("Vibration", fontsize=20)
 
-        ax.tick_params(labelsize=14)
-        ax2.tick_params(labelsize=14)
+        ax.tick_params(labelsize=20)
+        ax2.tick_params(labelsize=20)
         ax.grid(True)
         
         # 凡例をまとめる
         lines1, labels1 = ax.get_legend_handles_labels()
         lines2, labels2 = ax2.get_legend_handles_labels()
-        ax.legend(lines1 + lines2, labels1 + labels2, fontsize=12, loc="upper right")
+        ax.legend(lines1 + lines2, labels1 + labels2, fontsize=12, loc="upper left")
 
 
         plt.tight_layout()
+        
+        # 0の位置を合わせる
+        # 現在の表示範囲を取得
+        y1_min, y1_max = ax.get_ylim()
+        y2_min, y2_max = ax2.get_ylim()
+
+        # 0を基準とした時の上下のマージン比率を計算
+        # 下側(負)の広さ / 上側(正)の広さ
+        # ※ データが全て正の場合、minは0付近になるため比率は小さくなる
+        
+        # まずは0を含むように範囲を正規化（念のため）
+        y1_min = min(0, y1_min)
+        y1_max = max(0, y1_max)
+        y2_min = min(0, y2_min)
+        y2_max = max(0, y2_max)
+
+        # 上と下の絶対値
+        top1, bot1 = y1_max, abs(y1_min)
+        top2, bot2 = y2_max, abs(y2_min)
+
+        # ゼロ除算回避
+        if top1 == 0: top1 = 1.0
+        if top2 == 0: top2 = 1.0
+
+        # 比率 (bottom / top)
+        r1 = bot1 / top1
+        r2 = bot2 / top2
+
+        # 大きい方の比率に合わせる
+        target_r = max(r1, r2)
+        
+        # 新しい下限値を設定 (-top * target_r)
+        new_bot1 = top1 * target_r
+        new_bot2 = top2 * target_r
+        
+        # グラフに適用
+        ax.set_ylim(-new_bot1, top1)
+        ax2.set_ylim(-new_bot2, top2)
+
         plt.show()
 
     except Exception as e:

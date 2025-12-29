@@ -7,7 +7,7 @@ import threading
 import csv
 import datetime
 import os
-import queue
+
 
 # ===== Arduino設定 =====
 SERIAL_MOTOR = "COM4"
@@ -32,12 +32,9 @@ except:
 
 # ===== 制御パラメータ =====
 UP_CH = [1, 2]
-DOWN_CH = [5, 6]
+DOWN_CH = [6]
 MEASURE_DURATION_MS = 100
-COOLDOWN_MS = 0
-# ★調整済みパラメータ
-#RISE_SENSITIVITY = 6.0  # 6.0 -> 4.0 に下げて感度アップ
-#UP_HOLD_SENSITIVITY = 5.0
+COOLDOWN_MS = 500
 STRONG_RATIO = 10.0
 EMA_ALPHA = 0.2  # 0.2 -> 0.3 に上げて反応速度アップ
 K_SIGMA = 5.7  # new3.7.pyと同じ感度
@@ -164,9 +161,7 @@ def on_emg(emg, movement):
         return
 
     # 動作確認用ハートビート (1000回に1回表示)
-    if int(now * 100) % 500 == 0:  # 約5秒ごとに . を表示
-       # print(".", end="", flush=True) # 邪魔ならコメントアウト
-       pass
+
 
     # ★動作確認用: カウンターで確実に表示 (200Hz想定)
     # nowを使わず、呼び出し回数で判定する
@@ -301,10 +296,7 @@ def main():
         t_sensor = threading.Thread(target=sensor_read_loop, daemon=True)
         t_sensor.start()
 
-    # print(">> Setting LEDs...")
-    # m.set_leds([0, 255, 255], [0, 255, 255])
-    # print(">> Send Vibrate...")
-    # m.vibrate(1)
+
     print(">> Reset motor...")
     send_cmd("R")
     time.sleep(1.0)
@@ -314,11 +306,6 @@ def main():
     print(">> Motor Test: Release (R)")
     send_cmd("R")
 
-
-    # CSV logging removed
-
-    # t_logger = threading.Thread(target=logging_loop, args=(filename,), daemon=True)
-    # t_logger.start()
 
     
     print(">> Calling calibrate()...")
