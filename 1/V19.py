@@ -180,7 +180,7 @@ def on_emg(emg, movement):
         ch5_slope = ch5_val - prev_ema_val[5]
         ch6_slope = ch6_val - prev_ema_val[6]
         # 値と変化量を表示して、波形が来ているか確認
-        print(f"[Status] CH5:{ch5_val:.1f} CH6:{ch6_val:.1f}")
+        print(f"[Status] CH5:{ch5_val:.1f} (Slope:{ch5_slope:.2f}) CH6:{ch6_val:.1f} (Slope:{ch6_slope:.2f})")
 
     prev_ema_val = np.copy(ema_val)
     for ch in range(8):
@@ -195,7 +195,7 @@ def on_emg(emg, movement):
             # current_sensor_data は sensor_read_loop で更新されている
             log_data = [now] + ema_val.tolist() + latest_sensor_data + [current_state]
             csv_writer.writerow(log_data)
-        except Exception as e:
+        except Exception:
             pass
 
     if not calibration_done:
