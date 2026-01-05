@@ -102,54 +102,93 @@ def main():
 
         DOWN_CH_IDX = [5, 6]  # ch6, ch7
         # UP_HOLD_SENSITIVITY = 5.0 # 不使用
-        STRONG_RATIO = 10.0
-        CALIB_DURATION = 3.0
+        STRONG_RATIO = 13.0
+        CALIB_DURATION = 5.0
         K_SIGMA = 5.7  # Trigger Threshold (Sigma)
+        MEASURE_DURATION_MS = 200 # Measurement window for Strong/Weak check
+        COOLDOWN_MS = 500         # Cooldown period
 
-        print("\n=== Calculating Thresholds from first 5.0s ===")
-        # 最初の5秒間のデータを抽出
-        calib_df = df[df["time_rel"] <= CALIB_DURATION]
+        MEASURE_DURATION_MS = 200 # Measurement window for Strong/Weak check
+        COOLDOWN_MS = 500         # Cooldown period
 
-        # 可視化用の閾値 (Raw値に換算)
-        trigger_thresholds = np.zeros(8)
-        strong_threshold = 0.0
+        # New Calibration Timeline
+        # 0-5s: Resting
+        # 5-8s: Wait
+        # 8-11s: Weak
+        # 11-14s: Wait
+        # 14-17s: Strong
+        # 17s+: Analysis
+        
+        calib_rest_end = 5.0
+        calib_weak_start = 8.0
+        calib_weak_end = 11.0
+        calib_strong_start = 14.0
+        calib_strong_end = 17.0
 
-        if not calib_df.empty:
-            cal_means = np.zeros(8)
-            cal_stds = np.zeros(8)
-
-            # 各チャンネルのMean, Stdを計算
+        print("\n=== Calculating Thresholds ===")
+        
+        # 1. Resting Calibration (0-5s)
+        rest_df = df[df["time_rel"] <= calib_rest_end]
+        
+        cal_means = np.zeros(8)
+        cal_stds = np.zeros(8)
+        
+        if not rest_df.empty:
             for i in range(8):
                 col_name = f"ch{i+1}"
-                if col_name in calib_df.columns:
-                    val = calib_df[col_name].values
-                    # 平均・標準偏差
-                    m = np.mean(val)
-                    s = np.std(val, ddof=1)
-                    if s < 1e-6:
-                        s = 1e-6
-
-                    cal_means[i] = m
-                    cal_stds[i] = s
-
-                    # Trigger Threshold (Raw scale) = Mean + K_SIGMA * Std
-                    trigger_thresholds[i] = m + s * K_SIGMA
-
-            # Strong Threshold (DOWN_CHの平均Mean + DOWN_CHの標準偏差*Ratio の平均)
-            # V19: strong_thr_list.append(mean[ch] + std[ch] * STRONG_RATIO)
-            # strong_threshold = np.mean(strong_thr_list)
-            strong_vals = []
-            for idx in DOWN_CH_IDX:
-                val = cal_means[idx] + cal_stds[idx] * STRONG_RATIO
-                strong_vals.append(val)
-
-            if strong_vals:
-                strong_threshold = np.mean(strong_vals)
-
-            print(f"Trigger Thresholds (Mean + {K_SIGMA}sigma): {trigger_thresholds}")
-            print(f"Strong Threshold (Mean + {STRONG_RATIO}sigma): {strong_threshold:.2f}")
+                if col_name in rest_df.columns:
+                    val = rest_df[col_name].values
+                    cal_means[i] = np.mean(val)
+                    cal_stds[i] = np.std(val, ddof=1)
+                    if cal_stds[i] < 1e-6: cal_stds[i] = 1e-6
         else:
-            print("Warning: Not enough data for calibration calculation.")
+             print("Warning: No Resting Data found.")
+
+        # Trigger Thresholds (Base)
+        trigger_thresholds = cal_means + cal_stds * K_SIGMA
+        print(f"Trigger Thresholds (Mean + {K_SIGMA}sigma): {trigger_thresholds}")
+
+        # 2. Weak Calibration (8-11s)
+        weak_df = df[(df["time_rel"] >= calib_weak_start) & (df["time_rel"] <= calib_weak_end)]
+        weak_max = 0.0
+        if not weak_df.empty:
+             # DOWN_CH_IDX = [5, 6] (ch6, ch7)
+             vals = []
+             for idx in DOWN_CH_IDX:
+                 col = f"ch{idx+1}"
+                 if col in weak_df.columns:
+                     vals.append(weak_df[col].max())
+             if vals:
+                 weak_max = max(vals)
+        print(f"Weak Max (8-11s): {weak_max:.2f}")
+
+        # 3. Strong Calibration (14-17s)
+        strong_df = df[(df["time_rel"] >= calib_strong_start) & (df["time_rel"] <= calib_strong_end)]
+        strong_max = 0.0
+        if not strong_df.empty:
+             vals = []
+             for idx in DOWN_CH_IDX:
+                 col = f"ch{idx+1}"
+                 if col in strong_df.columns:
+                     vals.append(strong_df[col].max())
+             if vals:
+                 strong_max = max(vals)
+        print(f"Strong Max (14-17s): {strong_max:.2f}")
+
+        # 4. Calculate Strong Threshold
+        strong_threshold = 0.0
+        if strong_max > 0:
+            strong_threshold = (weak_max + strong_max) / 2.0
+        else:
+            # Fallback if no strong data (e.g. short recording)
+             vals = []
+             for idx in DOWN_CH_IDX:
+                vals.append(cal_means[idx] + cal_stds[idx] * STRONG_RATIO)
+             if vals:
+                 strong_threshold = np.mean(vals)
+             print("Warning: Using default Strong Threshold (no strong calib data).")
+
+        print(f"Strong Threshold: {strong_threshold:.2f}")
 
         # グラフ作成
         fig, ax = plt.subplots(figsize=(12, 8))
@@ -196,14 +235,29 @@ def main():
         # 検証範囲: キャリブレーション終了後
         analysis_df = df[df["time_rel"] > CALIB_DURATION].copy()
 
-        first_trigger_time = None
-        trigger_ch_name = ""
+        # Calibration Windows Visualization
+        # Weak (Blue), Strong (Red)
+        ax.axvspan(calib_weak_start, calib_weak_end, color="blue", alpha=0.1, label="Calib: Weak")
+        ax.axvspan(calib_strong_start, calib_strong_end, color="red", alpha=0.1, label="Calib: Strong")
 
-        if not analysis_df.empty and not calib_df.empty:
+        # 1. Trigger地点の探索 (Calibration後 = 17s以降)
+        # DOWN_CH_IDX (5, 6) のいずれかが Trigger Threshold を超えた最初の点
+        # V19 logic: Attack(Measure 200ms) -> Cooldown(500ms) -> Idle
+
+        # 検証範囲: Strong Calibration終了後
+        analysis_df = df[df["time_rel"] > calib_strong_end].copy()
+
+        trigger_events = [] # List of (time, ch_name)
+        next_available_time = 0.0
+
+        if not analysis_df.empty and not rest_df.empty:
             # Z-scoreを計算して判定
             for idx in range(len(analysis_df)):
                 row_idx = analysis_df.index[idx]
                 t = analysis_df["time_rel"].loc[row_idx]
+
+                if t < next_available_time:
+                    continue
 
                 is_triggered = False
                 for ch_idx in DOWN_CH_IDX:
@@ -216,22 +270,30 @@ def main():
 
                         # Z-score Check
                         if (val - mean_val) / std_val > K_SIGMA:
-                            first_trigger_time = t
-                            trigger_ch_name = col
+                            trigger_events.append((t, col))
+                            # Update next available time
+                            next_available_time = t + (MEASURE_DURATION_MS + COOLDOWN_MS) / 1000.0
                             is_triggered = True
                             break
-                if is_triggered:
-                    break
-
+    
         # 2. Vibration Peakの探索 (自動検出は削除)
         # ユーザー要望によりピークの自動検出とレイテンシ表示は削除
         # Trigger Point の線だけ残す
 
-        if first_trigger_time is not None:
+        if trigger_events:
+            print(f"Detected {len(trigger_events)} triggers.")
             # 3. 可視化
-            # Trigger Line (Vertical)
-            ax.axvline(x=first_trigger_time, color="orange", linestyle="-.", linewidth=1.5, label="Trigger Point")
-            print(f"Detected Trigger at {first_trigger_time:.3f}s ({trigger_ch_name})")
+            for i, (trig_time, trig_ch) in enumerate(trigger_events):
+                # Trigger Line (Vertical)
+                label_name = "Trigger Point" if i == 0 else None # Legendには1回だけ表示
+                ax.axvline(x=trig_time, color="orange", linestyle="-.", linewidth=1.5, label=label_name)
+                
+                # Measurement Duration (Shaded Area)
+                measure_end_time = trig_time + MEASURE_DURATION_MS / 1000.0
+                label_measure = f"Measure ({MEASURE_DURATION_MS}ms)" if i == 0 else None
+                ax.axvspan(trig_time, measure_end_time, color="yellow", alpha=0.2, label=label_measure)
+                
+                print(f"  [{i+1}] Time: {trig_time:.3f}s (ch: {trig_ch})")
 
         # 状態 (state) - 背景色などで表現してもいいが、今回は単純なプロットか、値として表示
         # if "state" in df.columns:

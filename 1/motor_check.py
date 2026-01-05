@@ -34,6 +34,24 @@ def main():
             ser.write(cmd.encode('utf-8'))
             ser.flush()
             time.sleep(2.0)
+            
+            cmd = "L"
+            print(f"Sending: {cmd} (Lift)")
+            ser.write(cmd.encode('utf-8'))
+            ser.flush()
+            time.sleep(2.0)
+
+            cmd = "I"
+            print(f"Sending: {cmd} (Release)")
+            ser.write(cmd.encode('utf-8'))
+            ser.flush()
+            time.sleep(2.0)
+
+            cmd = "S"
+            print(f"Sending: {cmd} (Release)")
+            ser.write(cmd.encode('utf-8'))
+            ser.flush()
+            time.sleep(2.0)
 
     except KeyboardInterrupt:
         print("\nStopping...")

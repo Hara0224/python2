@@ -11,7 +11,7 @@ import os
 
 # ===== Arduino設定 =====
 SERIAL_MOTOR = "COM4"
-SERIAL_SENSOR = "COM6"
+SERIAL_SENSOR = "COM5"
 BAUDRATE = 115200
 
 # ... (接続処理は変更なし) ...
@@ -33,9 +33,9 @@ except:
 # ===== 制御パラメータ =====
 UP_CH = [1, 2]
 DOWN_CH = [6]
-MEASURE_DURATION_MS = 100
+MEASURE_DURATION_MS = 200
 COOLDOWN_MS = 500
-STRONG_RATIO = 10.0
+STRONG_RATIO = 13.0
 EMA_ALPHA = 0.2  # 0.2 -> 0.3 に上げて反応速度アップ
 K_SIGMA = 5.7  # new3.7.pyと同じ感度
 CALIB_DURATION = 5.0
@@ -133,20 +133,52 @@ def calibrate(duration=CALIB_DURATION):
         if std[ch] < 1e-6 or np.isnan(std[ch]):
             std[ch] = 1e-6
             
-    # Strong Thresholdの計算 (mean + 10sigma くらいを強打とする)
-    # 以前は level_thresholds * 1.2 だった。
-    # level_thresholds ~= mean + 5*std なので、おおよそ mean + 6*std くらいが閾値だった。
-    # ここでは少し高めに設定しておく
-    strong_thr_list = []
-    for ch in DOWN_CH:
-        strong_thr_list.append(mean[ch] + std[ch] * STRONG_RATIO)
-    strong_threshold = np.mean(strong_thr_list)
+    # Strong Thresholdの計算 (Interactive / Automatic)
+    print("\n----------------------------------------")
+    print("【設定】強弱の閾値を決定します。")
+    print("3秒後に『弱い』動作の計測を開始します...")
+    time.sleep(3.0)
+    
+    print(">> Start WEAK calibration! (3 seconds)")
+    weak_max_val = 0.0
+    start_time = time.time()
+    while time.time() - start_time < 3.0:
+        time.sleep(0.01)
+        # 現在のダウンチャンネルの最大値を取得
+        current_down_level = np.max([ema_val[ch] for ch in DOWN_CH])
+        if current_down_level > weak_max_val:
+            weak_max_val = current_down_level
+    print(f">> 弱い動作の最大値: {weak_max_val:.2f}")
+
+    print("\n続いて3秒後に『強い』動作の計測を開始します...")
+    time.sleep(3.0)
+    
+    print(">> Start STRONG calibration! (3 seconds)")
+    strong_max_val = 0.0
+    start_time = time.time()
+    while time.time() - start_time < 3.0:
+        time.sleep(0.01)
+        current_down_level = np.max([ema_val[ch] for ch in DOWN_CH])
+        if current_down_level > strong_max_val:
+            strong_max_val = current_down_level
+    print(f">> 強い動作の最大値: {strong_max_val:.2f}")
+
+    # 閾値決定: 単純平均 (あるいは strong寄りでも良いが、まずは中間)
+    if strong_max_val <= weak_max_val:
+        print("!! 警告: 強い動作の値が弱い動作以下です。デフォルト設定を使用します。 !!")
+        # フォールバック: 従来の計算
+        strong_thr_list = []
+        for ch in DOWN_CH:
+            strong_thr_list.append(mean[ch] + std[ch] * STRONG_RATIO)
+        strong_threshold = np.mean(strong_thr_list)
+    else:
+        strong_threshold = (weak_max_val + strong_max_val) / 2.0
 
     calibration_done = True
     print("=== 完了 ===")
     print(f"DEBUG: Mean: {mean}")
     print(f"DEBUG: Std:  {std}")
-    print(f"DEBUG: Strong Thr: {strong_threshold:.2f}")
+    print(f"DEBUG: Strong Thr: {strong_threshold:.2f} (Weak:{weak_max_val:.1f} / Strong:{strong_max_val:.1f})")
 
 
 # ===== メインコールバック =====
@@ -266,6 +298,7 @@ def on_emg(emg, movement):
             cooldown_start_time = now
 
     elif current_state == STATE_COOLDOWN:
+        
         if (now - cooldown_start_time) * 1000 >= COOLDOWN_MS:
             send_cmd("R")
             current_state = STATE_IDLE
