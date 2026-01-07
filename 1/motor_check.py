@@ -29,7 +29,7 @@ def main():
             time.sleep(2.0)
 
             # DOWN / RESET
-            cmd = "R"
+            cmd = "S"
             print(f"Sending: {cmd} (Release)")
             ser.write(cmd.encode('utf-8'))
             ser.flush()
@@ -41,17 +41,12 @@ def main():
             ser.flush()
             time.sleep(2.0)
 
-            cmd = "I"
+            cmd = "W"
             print(f"Sending: {cmd} (Release)")
             ser.write(cmd.encode('utf-8'))
             ser.flush()
             time.sleep(2.0)
 
-            cmd = "S"
-            print(f"Sending: {cmd} (Release)")
-            ser.write(cmd.encode('utf-8'))
-            ser.flush()
-            time.sleep(2.0)
 
     except KeyboardInterrupt:
         print("\nStopping...")

@@ -102,10 +102,10 @@ def main():
 
         DOWN_CH_IDX = [5, 6]  # ch6, ch7
         # UP_HOLD_SENSITIVITY = 5.0 # 不使用
-        STRONG_RATIO = 13.0
+        STRONG_RATIO = 5.0
         CALIB_DURATION = 5.0
         K_SIGMA = 5.7  # Trigger Threshold (Sigma)
-        MEASURE_DURATION_MS = 200 # Measurement window for Strong/Weak check
+        MEASURE_DURATION_MS = 150 # Measurement window for Strong/Weak check
         COOLDOWN_MS = 500         # Cooldown period
 
         MEASURE_DURATION_MS = 200 # Measurement window for Strong/Weak check
@@ -178,7 +178,7 @@ def main():
         # 4. Calculate Strong Threshold
         strong_threshold = 0.0
         if strong_max > 0:
-            strong_threshold = (weak_max + strong_max) / 2.0
+            strong_threshold = weak_max + (strong_max - weak_max) * 0.5
         else:
             # Fallback if no strong data (e.g. short recording)
              vals = []
@@ -200,21 +200,21 @@ def main():
 
             if col in df.columns:
                 # プロット時にLineオブジェクトを取得して色を合わせる
-                lines = ax.plot(df["time_rel"], df[col], label=f"EMG {col}", alpha=1.0, linewidth=1.5)
+                lines = ax.plot(df["time_rel"], df[col], label=f"筋電 {col}", alpha=1.0, linewidth=1.5)
                 line_color = lines[0].get_color()
 
                 # ★追加: 閾値の描画
                 # Trigger Threshold (K_SIGMA)
                 t_thr = trigger_thresholds[i]
                 if t_thr > 0:
-                    ax.axhline(y=t_thr, color=line_color, linestyle="--", linewidth=1.0, alpha=0.7, label=f"{col} Trig ({t_thr:.1f})")
+                    ax.axhline(y=t_thr, color=line_color, linestyle="--", linewidth=1.0, alpha=0.7, label=f"{col} 閾値 ({t_thr:.1f})")
 
         # Strong Threshold (共通) の描画
         # もし選択されたチャンネルにDOWN_CHが含まれていれば表示するなど制御してもいいが、
         # とりあえず赤線で引いておく
         is_down_ch_selected = any(idx in DOWN_CH_IDX for idx in selected_ch_indices)
         if is_down_ch_selected:
-            ax.axhline(y=strong_threshold, color="red", linestyle="--", linewidth=1.5, label=f"Strong Thr ({strong_threshold:.1f})")
+            ax.axhline(y=strong_threshold, color="red", linestyle="--", linewidth=1.5, label=f"強閾値 ({strong_threshold:.1f})")
 
         # 振動データ (vib1_z, vib2_z)
         # 軸を分ける
@@ -226,7 +226,7 @@ def main():
             if col in df.columns:
                 # 振動データ (生データ - 470)
                 v_data = df[col] - 470
-                ax2.plot(df["time_rel"], v_data, label=f"Vib {col}", linestyle="-", linewidth=1.2, alpha=0.5, color=vib_colors[i])
+                ax2.plot(df["time_rel"], v_data, label=f"振動 {col}", linestyle="-", linewidth=1.2, alpha=0.5, color=vib_colors[i])
 
         # ===== Latency Analysis (Trigger -> Max Vib) =====
         # 1. Trigger地点の探索 (Calibration後)
@@ -237,8 +237,8 @@ def main():
 
         # Calibration Windows Visualization
         # Weak (Blue), Strong (Red)
-        ax.axvspan(calib_weak_start, calib_weak_end, color="blue", alpha=0.1, label="Calib: Weak")
-        ax.axvspan(calib_strong_start, calib_strong_end, color="red", alpha=0.1, label="Calib: Strong")
+        ax.axvspan(calib_weak_start, calib_weak_end, color="blue", alpha=0.1, label="キャリブ: 弱")
+        ax.axvspan(calib_strong_start, calib_strong_end, color="red", alpha=0.1, label="キャリブ: 強")
 
         # 1. Trigger地点の探索 (Calibration後 = 17s以降)
         # DOWN_CH_IDX (5, 6) のいずれかが Trigger Threshold を超えた最初の点
@@ -285,20 +285,83 @@ def main():
             # 3. 可視化
             for i, (trig_time, trig_ch) in enumerate(trigger_events):
                 # Trigger Line (Vertical)
-                label_name = "Trigger Point" if i == 0 else None # Legendには1回だけ表示
+                label_name = "トリガー" if i == 0 else None # Legendには1回だけ表示
                 ax.axvline(x=trig_time, color="orange", linestyle="-.", linewidth=1.5, label=label_name)
                 
                 # Measurement Duration (Shaded Area)
                 measure_end_time = trig_time + MEASURE_DURATION_MS / 1000.0
-                label_measure = f"Measure ({MEASURE_DURATION_MS}ms)" if i == 0 else None
+                label_measure = f"計測 ({MEASURE_DURATION_MS}ms)" if i == 0 else None
                 ax.axvspan(trig_time, measure_end_time, color="yellow", alpha=0.2, label=label_measure)
                 
-                print(f"  [{i+1}] Time: {trig_time:.3f}s (ch: {trig_ch})")
+                # ===== Peak Analysis logic =====
+                # 500ms window for analysis
+                analyze_window = 0.5 
+                window_df = df[(df["time_rel"] >= trig_time) & (df["time_rel"] <= trig_time + analyze_window)]
+                
+                peak_val = 0.0
+                peak_time_rel = 0.0
+                
+                if not window_df.empty:
+                    # check peak in trigger channel (or all DOWN channels?)
+                    # Usually we care about the channel that triggered, or the max of DOWN_CH
+                    # Let's check max of DOWN_CH_IDX
+                    vals = []
+                    for d_idx in DOWN_CH_IDX:
+                        c_name = f"ch{d_idx+1}"
+                        if c_name in window_df.columns:
+                            # 期間内の最大値を見つける
+                            mx = window_df[c_name].max()
+                            # その時刻
+                            idxmax = window_df[c_name].idxmax()
+                            t_mx = window_df.loc[idxmax, "time_rel"]
+                            vals.append((mx, t_mx))
+                    
+                    # 最も高い値を持つチャンネルを採用
+                    if vals:
+                        vals.sort(key=lambda x: x[0], reverse=True)
+                        peak_val, peak_abs_time = vals[0]
+                        peak_time_rel = (peak_abs_time - trig_time) * 1000 # ms
+                
+                print(f"  [{i+1}] Time: {trig_time:.3f}s (ch: {trig_ch}) | Peak: {peak_val:.2f} (at {peak_time_rel:.1f}ms)")
 
-        # 状態 (state) - 背景色などで表現してもいいが、今回は単純なプロットか、値として表示
-        # if "state" in df.columns:
-        # stateを見やすくするために少しスケールする等の工夫が可能だが、一旦そのまま
-        #    ax.plot(df["time_rel"], df["state"] * 10, label="State (x10)", linestyle=":", color="black")
+        # 判定ライン (Strong/Weak) の再構築と表示
+        # Stateの表示は削除し、こちらを表示
+        decision_vals = np.zeros(len(df))
+        
+        # タイムスタンプからインデックスへのマッピング用
+        times = df["time_rel"].values
+        
+        for i, (trig_time, trig_ch) in enumerate(trigger_events):
+             # ピーク再計算 (判定用)
+             analyze_window = 0.5
+             window_df = df[(df["time_rel"] >= trig_time) & (df["time_rel"] <= trig_time + analyze_window)]
+             
+             peak_val = 0.0
+             if not window_df.empty:
+                 vals = []
+                 for d_idx in DOWN_CH_IDX:
+                     c_name = f"ch{d_idx+1}"
+                     if c_name in window_df.columns:
+                         vals.append(window_df[c_name].max())
+                 if vals:
+                     peak_val = max(vals)
+             
+             # 判定 (Thresholdは 0.3 ウェイトで計算済み)
+             judge_val = 50 # Weak
+             if peak_val > strong_threshold:
+                 judge_val = 100 # Strong
+             
+             # インデックス範囲を取得 (numpy searchsortedが高速)
+             start_idx = np.searchsorted(times, trig_time)
+             end_idx = np.searchsorted(times, trig_time + 0.5) # 0.5秒間表示
+             
+             # 配列を埋める
+             if start_idx < len(decision_vals):
+                end_idx = min(end_idx, len(decision_vals))
+                decision_vals[start_idx:end_idx] = judge_val
+        
+        # 判定ラインのプロット
+        ax.plot(df["time_rel"], decision_vals, label="判定 (50=弱 / 100=強)", color="magenta", linewidth=2.0)
 
         ax.set_title("センサーデータ可視化", fontsize=25)
         ax.set_xlabel("時間 (秒)", fontsize=20)
@@ -313,7 +376,7 @@ def main():
         lines1, labels1 = ax.get_legend_handles_labels()
         lines2, labels2 = ax2.get_legend_handles_labels()
         # 重複を除く (閾値線などでラベルが増えすぎるのを防ぐため、必要ならsetでユニークにするが、今回はそのまま)
-        ax.legend(lines1 + lines2, labels1 + labels2, fontsize=12, loc="upper right")
+        ax.legend(lines1 + lines2, labels1 + labels2, fontsize=12, loc="upper left")
 
         # ===== Interactive Manual Measurement =====
         click_state = {"count": 0, "start_time": None, "start_val": None, "markers": []}

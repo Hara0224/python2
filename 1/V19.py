@@ -31,14 +31,17 @@ except:
     ser_sensor = None
 
 # ===== 制御パラメータ =====
-UP_CH = [1, 2]
-DOWN_CH = [6]
-MEASURE_DURATION_MS = 200
+UP_CH = [1,2]
+DOWN_CH = [5]
+MEASURE_DURATION_MS = 150
 COOLDOWN_MS = 500
-STRONG_RATIO = 13.0
+STRONG_RATIO = 5.0
 EMA_ALPHA = 0.2  # 0.2 -> 0.3 に上げて反応速度アップ
 K_SIGMA = 5.7  # new3.7.pyと同じ感度
 CALIB_DURATION = 5.0
+# ★強弱の範囲設定 (Min, Max)
+WEAK_RANGE   = [60.0, 70.0]
+STRONG_RANGE = [80.0, 100.0]
 
 # ===== グローバル変数 =====
 rms_buf = [deque(maxlen=30) for _ in range(8)]
@@ -112,7 +115,7 @@ def send_cmd(cmd):
 def calibrate(duration=CALIB_DURATION):
     # (ロジックは元のままなので省略、ただしCSV保存はQueue経由になるため影響なし)
     # ★new3.7.py 風のキャリブレーション (Mean/Std取得)
-    global mean, std, calibration_done
+    global mean, std, calibration_done, strong_threshold
     print("\n=== キャリブレーション: 3秒間 脱力してください ===")
     
     # データ収集用バッファ
@@ -163,19 +166,9 @@ def calibrate(duration=CALIB_DURATION):
             strong_max_val = current_down_level
     print(f">> 強い動作の最大値: {strong_max_val:.2f}")
 
-    # 閾値決定: 単純平均 (あるいは strong寄りでも良いが、まずは中間)
-    if strong_max_val <= weak_max_val:
-        print("!! 警告: 強い動作の値が弱い動作以下です。デフォルト設定を使用します。 !!")
-        # フォールバック: 従来の計算
-        strong_thr_list = []
-        for ch in DOWN_CH:
-            strong_thr_list.append(mean[ch] + std[ch] * STRONG_RATIO)
-        strong_threshold = np.mean(strong_thr_list)
-    else:
-        strong_threshold = (weak_max_val + strong_max_val) / 2.0
-
     calibration_done = True
-    print("=== 完了 ===")
+    print("\n=== 完了 ===")
+    print(f"★設定範囲: Weak={WEAK_RANGE}, Strong={STRONG_RANGE}")
     print(f"DEBUG: Mean: {mean}")
     print(f"DEBUG: Std:  {std}")
     print(f"DEBUG: Strong Thr: {strong_threshold:.2f} (Weak:{weak_max_val:.1f} / Strong:{strong_max_val:.1f})")
@@ -265,7 +258,7 @@ def on_emg(emg, movement):
         if max_down_z > 2.0: 
              ch_idx = np.argmax(down_z_list)
              target_ch = DOWN_CH[ch_idx]
-             print(f"[DEBUG] Z:{max_down_z:.2f} / Thr:{K_SIGMA} (ch{target_ch+1})")
+             #print(f"[DEBUG] Z:{max_down_z:.2f} / Thr:{K_SIGMA} (ch{target_ch+1})")
 
         # UP Trigger
         is_up_active = False
@@ -288,12 +281,31 @@ def on_emg(emg, movement):
         if (now - measure_start_time) * 1000 >= MEASURE_DURATION_MS:
             if len(measure_buffer) > 0:
                 peak_val = np.max(measure_buffer)
-                if peak_val > strong_threshold:
+                
+                # ★判定ロジック (Clamping実装)
+                # 優先度: Strong判定 (Min以上ならStrongとみなす)
+                if peak_val >= STRONG_RANGE[0]:
+                    # Strong判定
+                    # 範囲を超えていたら(上)、Minに丸める (下は条件で弾いているのであり得ないはずだが念のため)
+                    measured_val = peak_val
+                    if measured_val > STRONG_RANGE[1]:
+                        measured_val = STRONG_RANGE[0]
+                        print(f"[HIT] STRONG (Clamped) (Raw:{peak_val:.1f} -> {measured_val:.1f})")
+                    else:
+                        print(f"[HIT] STRONG (Raw:{peak_val:.1f})")
                     send_cmd("S")
-                    print(f"[HIT] STRONG (Level:{peak_val:.1f})")
+
                 else:
+                    # Weak判定 (Strong未満はすべてWeak扱い)
+                    # 範囲外(下 または 上[Gap])なら Minに丸める
+                    measured_val = peak_val
+                    if measured_val < WEAK_RANGE[0] or measured_val > WEAK_RANGE[1]:
+                        measured_val = WEAK_RANGE[0]
+                        print(f"[HIT] weak   (Clamped) (Raw:{peak_val:.1f} -> {measured_val:.1f})")
+                    else:
+                        print(f"[HIT] weak   (Raw:{peak_val:.1f})")
                     send_cmd("W")
-                    print(f"[HIT] weak   (Level:{peak_val:.1f})")
+
             current_state = STATE_COOLDOWN
             cooldown_start_time = now
 

@@ -3,9 +3,9 @@ import csv
 import time
 
 # --- 設定 ---
-COM_PORT = 'COM6'  # Arduinoのポート番号に合わせて変更してください
+COM_PORT = 'COM5'  # Arduinoのポート番号に合わせて変更してください
 BAUD_RATE = 115200 # ArduinoのSerial.beginと同じ速度
-OUTPUT_FILE = 'sensor_test.csv'
+OUTPUT_FILE = 'sensor_test2.csv'
 
 def save_and_print_data():
     try:
