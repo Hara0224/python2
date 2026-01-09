@@ -26,28 +26,48 @@ def select_channels(root):
     # ウィンドウを画面中央に配置
     sw = root.winfo_screenwidth()
     sh = root.winfo_screenheight()
-    w, h = 300, 350
+    w, h = 300, 450 # 高さ拡張
     x = (sw - w) // 2
     y = (sh - h) // 2
     root.geometry(f"{w}x{h}+{x}+{y}")
 
-    vars = []
-    checks = []
+    vars_emg = []
+    checks_emg = []
+
+    # EMG Label
+    lbl_emg = tk.Label(root, text="EMG Channels", font=("MS Gothic", 10, "bold"))
+    lbl_emg.pack(anchor="w", padx=20, pady=(10, 0))
 
     # チェックボックス作成 (ch1-ch8)
     for i in range(8):
-        v = tk.BooleanVar(value=False)  # デフォルトでON
-        vars.append(v)
+        v = tk.BooleanVar(value=False)  # デフォルトでOFF
+        vars_emg.append(v)
         c = tk.Checkbutton(root, text=f"Channel {i+1}", variable=v, font=("MS Gothic", 12))
         c.pack(anchor="w", padx=20, pady=2)
-        checks.append(c)
+        checks_emg.append(c)
 
-    selected_indices = []
+    # Vib Label
+    lbl_vib = tk.Label(root, text="Vibration Sensors", font=("MS Gothic", 10, "bold"))
+    lbl_vib.pack(anchor="w", padx=20, pady=(10, 0))
+
+    vars_vib = []
+    vib_labels = ["vib1_z", "vib2_z"]
+    for i, label in enumerate(vib_labels):
+        v = tk.BooleanVar(value=True) # デフォルトでON
+        vars_vib.append(v)
+        c = tk.Checkbutton(root, text=label, variable=v, font=("MS Gothic", 12))
+        c.pack(anchor="w", padx=20, pady=2)
+
+    selected_emg_indices = []
+    selected_vib_indices = []
 
     def on_ok():
-        for i, v in enumerate(vars):
+        for i, v in enumerate(vars_emg):
             if v.get():
-                selected_indices.append(i)
+                selected_emg_indices.append(i)
+        for i, v in enumerate(vars_vib):
+             if v.get():
+                 selected_vib_indices.append(i)
         root.quit()  # mainloopを抜ける
 
     btn_frame = tk.Frame(root)
@@ -58,10 +78,12 @@ def select_channels(root):
 
     root.mainloop()
 
-    # 何も選択されなかった場合は全部表示などの対策
-    if not selected_indices:
-        return list(range(8))  # 全チャンネル
-    return selected_indices
+    # 何も選択されなかった場合は全部表示などの対策 (EMGのみ)
+    if not selected_emg_indices:
+        selected_emg_indices = list(range(8))  # 全チャンネル
+    
+    # 振動は選択なければ空リストでOK
+    return selected_emg_indices, selected_vib_indices
 
 
 def main():
@@ -78,8 +100,10 @@ def main():
     print(f"Loading: {csv_path}")
 
     # チャンネル選択ダイアログ表示
-    selected_ch_indices = select_channels(root)
-    print(f"Selected Channels: {[i+1 for i in selected_ch_indices]}")
+    # チャンネル選択ダイアログ表示
+    selected_ch_indices, selected_vib_indices = select_channels(root)
+    print(f"Selected EMG Channels: {[i+1 for i in selected_ch_indices]}")
+    print(f"Selected Vib Channels: {selected_vib_indices}")
 
     root.destroy()  # GUI終了
 
@@ -100,15 +124,12 @@ def main():
 
         # V19のパラメータ (Z-score版)
 
-        DOWN_CH_IDX = [5, 6]  # ch6, ch7
+        DOWN_CH_IDX = [5]  # ch6, ch7
         # UP_HOLD_SENSITIVITY = 5.0 # 不使用
         STRONG_RATIO = 5.0
         CALIB_DURATION = 5.0
-        K_SIGMA = 5.7  # Trigger Threshold (Sigma)
-        MEASURE_DURATION_MS = 150 # Measurement window for Strong/Weak check
-        COOLDOWN_MS = 500         # Cooldown period
-
-        MEASURE_DURATION_MS = 200 # Measurement window for Strong/Weak check
+        K_SIGMA = 5.9  # Trigger Threshold (Sigma)
+        MEASURE_DURATION_MS = 140 # Measurement window for Strong/Weak check
         COOLDOWN_MS = 500         # Cooldown period
 
         # New Calibration Timeline
@@ -193,14 +214,22 @@ def main():
         # グラフ作成
         fig, ax = plt.subplots(figsize=(12, 8))
 
+        # 表示用マスク (17秒以降のみ表示)
+        plot_mask = df["time_rel"] > 17.0
+
         # EMGデータ (ch1-ch8)
         # 選択されたチャンネルのみループ
-        for i in selected_ch_indices:
+        # 色のリスト (緑, 紫)
+        colors = ["green", "purple"]
+
+        for idx, i in enumerate(selected_ch_indices):
             col = f"ch{i+1}"
+            plot_color = colors[idx % len(colors)]
 
             if col in df.columns:
                 # プロット時にLineオブジェクトを取得して色を合わせる
-                lines = ax.plot(df["time_rel"], df[col], label=f"筋電 {col}", alpha=1.0, linewidth=1.5)
+                # 17秒以降のみプロット
+                lines = ax.plot(df.loc[plot_mask, "time_rel"], df.loc[plot_mask, col], label=f"筋電 {col}", alpha=1.0, linewidth=1.5, color=plot_color)
                 line_color = lines[0].get_color()
 
                 # ★追加: 閾値の描画
@@ -223,10 +252,11 @@ def main():
         vib_colors = ["red", "blue"]
 
         for i, col in enumerate(vib_cols):
-            if col in df.columns:
+            # iが選択されたindexリストに含まれているか確認
+            if i in selected_vib_indices and col in df.columns:
                 # 振動データ (生データ - 470)
-                v_data = df[col] - 470
-                ax2.plot(df["time_rel"], v_data, label=f"振動 {col}", linestyle="-", linewidth=1.2, alpha=0.5, color=vib_colors[i])
+                v_data = df.loc[plot_mask, col] - 470
+                ax2.plot(df.loc[plot_mask, "time_rel"], v_data, label=f"振動 {col}", linestyle="-", linewidth=1.2, alpha=0.5, color=vib_colors[i])
 
         # ===== Latency Analysis (Trigger -> Max Vib) =====
         # 1. Trigger地点の探索 (Calibration後)
@@ -237,8 +267,9 @@ def main():
 
         # Calibration Windows Visualization
         # Weak (Blue), Strong (Red)
-        ax.axvspan(calib_weak_start, calib_weak_end, color="blue", alpha=0.1, label="キャリブ: 弱")
-        ax.axvspan(calib_strong_start, calib_strong_end, color="red", alpha=0.1, label="キャリブ: 強")
+        # 17秒以降のみ表示するため、キャリブレーション範囲の表示はコメントアウト
+        # ax.axvspan(calib_weak_start, calib_weak_end, color="blue", alpha=0.1, label="キャリブ: 弱")
+        # ax.axvspan(calib_strong_start, calib_strong_end, color="red", alpha=0.1, label="キャリブ: 強")
 
         # 1. Trigger地点の探索 (Calibration後 = 17s以降)
         # DOWN_CH_IDX (5, 6) のいずれかが Trigger Threshold を超えた最初の点
@@ -347,9 +378,9 @@ def main():
                      peak_val = max(vals)
              
              # 判定 (Thresholdは 0.3 ウェイトで計算済み)
-             judge_val = 50 # Weak
+             judge_val = -150 # Weak
              if peak_val > strong_threshold:
-                 judge_val = 100 # Strong
+                 judge_val = -250 # Strong
              
              # インデックス範囲を取得 (numpy searchsortedが高速)
              start_idx = np.searchsorted(times, trig_time)
@@ -361,7 +392,8 @@ def main():
                 decision_vals[start_idx:end_idx] = judge_val
         
         # 判定ラインのプロット
-        ax.plot(df["time_rel"], decision_vals, label="判定 (50=弱 / 100=強)", color="magenta", linewidth=2.0)
+        # 判定ラインのプロット
+        ax.plot(df.loc[plot_mask, "time_rel"], decision_vals[plot_mask], label="判定 (50=弱 / 100=強)", color="magenta", linewidth=2.0)
 
         ax.set_title("センサーデータ可視化", fontsize=25)
         ax.set_xlabel("時間 (秒)", fontsize=20)
