@@ -9,7 +9,7 @@ def select_file(root):
 
     # ファイル選択ダイアログを表示し、ユーザーにCSVファイルを選択させる。
     # 初期ディレクトリは C:\Users\hrsyn\Desktop\gitPython\1 またはカレントディレクトリ。
-    initial_dir = r"C:\Users\hrsyn\Desktop\gitPython\1"
+    initial_dir = r"G:/マイドライブ/GooglePython/csv"
     if not os.path.exists(initial_dir):
         initial_dir = os.getcwd()
 

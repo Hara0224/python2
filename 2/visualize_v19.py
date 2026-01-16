@@ -102,7 +102,7 @@ def main():
 
         DOWN_CH_IDX = [5, 6]  # ch6, ch7
         # UP_HOLD_SENSITIVITY = 5.0 # 不使用
-        STRONG_RATIO = 10.0
+        STRONG_RATIO = 11.5
         CALIB_DURATION = 3.0
         K_SIGMA = 5.7  # Trigger Threshold (Sigma)
 
@@ -229,7 +229,7 @@ def main():
         if first_trigger_time is not None:
             # 3. 可視化
             # Trigger Line (Vertical)
-            ax.axvline(x=first_trigger_time, color="orange", linestyle="-.", linewidth=1.5, label="Trigger Point")
+            ax.axvline(x=first_trigger_time, color="orange", linestyle="-.", linewidth=1.0, label="Trigger Point")
             print(f"Detected Trigger at {first_trigger_time:.3f}s ({trigger_ch_name})")
 
         # 状態 (state) - 背景色などで表現してもいいが、今回は単純なプロットか、値として表示
@@ -237,13 +237,13 @@ def main():
         # stateを見やすくするために少しスケールする等の工夫が可能だが、一旦そのまま
         #    ax.plot(df["time_rel"], df["state"] * 10, label="State (x10)", linestyle=":", color="black")
 
-        ax.set_title("EMG、振動データ", fontsize=20)
-        ax.set_xlabel("時間 (秒)", fontsize=16)
-        ax.set_ylabel("EMG (RMS)", fontsize=16)
-        ax2.set_ylabel("Vibration (Abs)", fontsize=16)
+        ax.set_title("EMG、振動データ", fontsize=25)
+        ax.set_xlabel("時間 (秒)", fontsize=20)
+        ax.set_ylabel("EMG (RMS)", fontsize=20)
+        ax2.set_ylabel("Vibration (Abs)", fontsize=20)
 
-        ax.tick_params(labelsize=14)
-        ax2.tick_params(labelsize=14)
+        ax.tick_params(labelsize=16)
+        ax2.tick_params(labelsize=16)
         ax.grid(True)
 
         # 凡例をまとめる
