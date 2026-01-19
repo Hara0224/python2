@@ -38,7 +38,7 @@ except Exception as e:
 UP_CH = [1, 2]
 DOWN_CH = [5]
 MEASURE_DURATION_MS = 140
-COOLDOWN_MS = 500
+COOLDOWN_MS = 550
 STRONG_RATIO = 5.0
 EMA_ALPHA = 0.2
 K_SIGMA = 5.9
@@ -299,10 +299,17 @@ def main():
     except KeyboardInterrupt:
         print("\nStopping...")
         is_running = False
-        m.disconnect()
-        if ser_motor: ser_motor.close()
-        if ser_sensor: ser_sensor.close()
-        if csv_file: csv_file.close()
+        # ハングを防ぐため、デバイス切断処理(m.disconnectなど)はスキップして
+        # CSV保存完了後に強制終了する
+        
+        if csv_file:
+            try:
+                csv_file.close()
+                print("CSV saved.")
+            except Exception as e:
+                print(f"CSV close error: {e}")
+
+        print("Force Exit.")
         os._exit(0)
 
 if __name__ == "__main__":
